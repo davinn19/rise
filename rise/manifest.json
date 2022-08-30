@@ -12,5 +12,8 @@
 		},
 		"default_popup": "browserAction/index.html",
 		"default_title": "Rise"
+	},
+	"chrome_url_overrides" : {
+		"newtab": "newTab/index.html"
 	}
 }
