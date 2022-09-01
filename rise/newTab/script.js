@@ -1,25 +1,19 @@
 window.onload = function () {
-    updateTime();
-
-    const canvas = document.getElementById("canvas");
+    const canvas = document.getElementById("background");
     const ctx = canvas.getContext("2d");
 
-    ctx.font = "30px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("Hello", canvas.clientWidth / 2, canvas.clientHeight / 2);
 };
 
 updateTime = function () {
     const date = new Date();
-
     let hour = date.getHours();
     const minute = date.getMinutes();
-
+    
     let timeSuffix;
     if (hour < 12) {
-        timeSuffix = "AM";
+        timeSuffix = "am";
     } else {
-        timeSuffix = "PM";
+        timeSuffix = "pm";
     }
 
     if (hour == 0) {
@@ -28,12 +22,35 @@ updateTime = function () {
         hour -= 12;
     }
 
-    document.getElementById("clock").textContent =
-        "" + hour + ":" + minute + " " + timeSuffix;
+    let minuteString;
+    if (minute < 10) {
+        minuteString = "0" + minute;
+    } else {
+        minuteString = "" + minute;
+    }
+
+    document.getElementById("clock").textContent = "" + hour + ":" + minuteString + " " + timeSuffix;
 };
+
+updateGreeting = function () {
+    const hour = new Date().getHours();
+    let greeting;
+    
+    if (hour >= 22 || hour < 4) {
+        greeting = "night";
+    } else if (hour >= 18) {
+        greeting = "evening";
+    } else if (hour >= 12) {
+        greeting = "afternoon";
+    } else {
+        greeting = "morning";
+    }
+    document.getElementById("greeting").textContent = "Good " + greeting + ".";
+}
 
 updateScreen = function() {
     updateTime();
+    updateGreeting();
 }
 
 interval = setInterval(updateScreen, 10);
