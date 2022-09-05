@@ -48,3 +48,7 @@ body,
 #greeting {
     font-size: 200%;
 }
+
+#weather {
+    gap: 5px;
+}
