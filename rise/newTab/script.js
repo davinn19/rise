@@ -1,7 +1,6 @@
 window.onload = function () {
-    const canvas = document.getElementById("background");
-    const ctx = canvas.getContext("2d");
-
+    updateTime();
+    updateGreeting();
 };
 
 updateTime = function () {
@@ -29,8 +28,9 @@ updateTime = function () {
         minuteString = "" + minute;
     }
 
-    document.getElementById("clock").textContent = "" + hour + ":" + minuteString + " " + timeSuffix;
-};
+    document.getElementById("clockNumbers").textContent = "" + hour + ":" + minuteString;
+    document.getElementById("clockTimeOfDay").textContent = timeSuffix;
+}
 
 updateGreeting = function () {
     const hour = new Date().getHours();
@@ -48,9 +48,10 @@ updateGreeting = function () {
     document.getElementById("greeting").textContent = "Good " + greeting + ".";
 }
 
-updateScreen = function() {
-    updateTime();
-    updateGreeting();
+updateWeather = function () {
+
 }
 
-interval = setInterval(updateScreen, 10);
+setInterval(updateTime, 10);
+setInterval(updateGreeting, 1000);
+setInterval(updateWeather, 20000);

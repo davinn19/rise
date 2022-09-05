@@ -5,11 +5,16 @@
         <script src="script.js"></script>
     </head>
     <body>
-        <div class="container">
-            <div id="clock"></div>
+        <div id="foreground" class="layer">
+            <div id="clock" class="rowContainer">
+                <div id="clockNumbers"></div>
+                <div id="clockTimeOfDay"></div>
+            </div>
             <div id="greeting"></div>
-            <div id="dashboard"></div>
+            <div id="weather" class="rowContainer">
+                <div id="temperature"></div>
+            </div>
         </div>
-        <canvas id="background"></canvas>
+        <div id="background" class="layer"></div>
     </body>
 </html>
