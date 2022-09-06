@@ -69,14 +69,6 @@ updateWeather = function () {
             document.getElementById("weatherCondition").textContent = weatherCondition;
             document.getElementById("divider").textContent = "|"
         })
-
-        // const temperature = weatherData.current.temp;
-        // const weatherCondition = weatherData.current.weather.main;
-
-        // document.getElementById(temperature).textContent = temperature + "°F";
-        // console.log(temperature);
-        // console.log(weatherCondition);
-        
     });
 };
 
