@@ -86,9 +86,7 @@ setInterval(updateWeather, 1200000);
 function updateBackground() {
     const skyElements = document.getElementsByClassName("sky");
 
-
     for (let i = 0; i < skyElements.length; i++) {
-        console.log("yo");
         skyElements.item(i).style.fill = nightColor;
     }
 
@@ -116,8 +114,6 @@ function hexToRgb(hex) {
 }
 
 function getColorGradient(mainColors, gradientSize) {
-    console.log(gradientSize);
-    console.log(mainColors.length);
     if (mainColors.length < 2) {
         console.log("mainColors should be an array of at least two colors");
         return [];
@@ -130,20 +126,19 @@ function getColorGradient(mainColors, gradientSize) {
     const colorsPerInterval = gradientSize / (mainColors.length - 1);
 
     for (let i = 0; i < mainColors.length - 1; i++) {
-        const color1 = mainColors[i];
-        const color2 = mainColors[i + 1];
+        const color1 = hexToRgb(mainColors[i]);
+        const color2 = hexToRgb(mainColors[i + 1]);
 
-        let r1, g1, b1 = hexToRgb(color1);
-        let r2, g2, b2 = hexToRgb(color2);
-        const rIncrement = (r2 - r1) / colorsPerInterval;
-        const gIncrement = (g2 - g1) / colorsPerInterval;
-        const bIncrement = (b2 - b1) / colorsPerInterval;
+        const rIncrement = Math.round((color2.r - color1.r) / colorsPerInterval);
+        const gIncrement = Math.round((color2.g - color1.g) / colorsPerInterval);
+        const bIncrement = Math.round((color2.b - color1.b) / colorsPerInterval);
 
         for (let j = 0; j < colorsPerInterval; j++) {
-            const newColor = rgbToHex(r1 + rIncrement * j, g1 + gIncrement * j, b1 + bIncrement * j);
+            const newColor = rgbToHex(color1.r + rIncrement * j, color1.g + gIncrement * j, color1.b + bIncrement * j);
             colors.push(newColor);
         }
     }
+    console.log(colors);
 
     return colors;
 }
