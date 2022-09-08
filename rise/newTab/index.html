@@ -18,11 +18,23 @@
                 <div id="temperature"></div>
             </div>
         </div>
-        <svg id="background" class="layer" viewbox="0 0 100 100" preserveAspectRatio="none">
-            <rect width="100%" height="100%" style="fill:darkorchid;stroke-width:0"></rect>
-            <circle cx="60" cy="60" r="10" style="fill:yellow;stroke-width:0"></circle>
-            <polygon points="-10,100 70,100 30,20" style="fill:blueviolet;stroke-width:0"></polygon>
-            <polygon points="50,100 100,100 75,50" style="fill:blueviolet;stroke-width:0"></polygon>
+        <svg id="background" class="layer" viewbox="0 0 160 90" preserveAspectRatio="xMidYMid slice">
+            <rect class="sky" width="100%" height="100%" style="fill:aqua;stroke-width:0"></rect> 
+            <circle id="sun" cx="110" cy="30" r="10" style="fill:yellow;stroke-width:0"></circle>
+            <g id="moon">
+                <circle id="moon" cx="110" cy="30" r="10" style="fill:blanchedalmond"></circle>
+                <!-- negative space of moon -->
+                <circle class="sky" cx="100" cy="30" r="10" style="fill:aqua"></circle>
+            </g>
+            
+            <g class="mountain">
+                <polygon class="mountainFront" points="20,90 140,90 80,30" style="fill:blueviolet"></polygon>
+                <polygon class="mountainSide" points="60,90 140,90 80,30" style="fill:darkorchid"></polygon>
+            </g>
+            <g class="mountain">
+                <polygon class="mountainFront" points="-10,90 110,90 50,40" style="fill:blueviolet"></polygon>
+                <polygon class="mountainSide" points="30,90 110,90 50,40" style="fill:darkorchid"></polygon>
+            </g>
         </svg>
     </body>
 </html>

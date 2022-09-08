@@ -1,10 +1,18 @@
+const nightColor = "#070B34";
+const sunriseColor = "#7b95b6";
+const dayColor = "#87ceeb";
+const sunsetColor = "#FF5677";
+const sunriseGradient = getColorGradient([nightColor, sunriseColor, dayColor], 60); // starts at 6:01 am - ends at 7:00 am
+const sunsetGradient = getColorGradient([dayColor, sunsetColor, nightColor], 60); // starts at 8:01 pm - ends at 9:00 pm
+
 window.onload = function () {
     updateTime();
     updateGreeting();
     updateWeather();
+    updateBackground();
 };
 
-updateTime = function () {
+function updateTime() {
     const date = new Date();
     let hour = date.getHours();
     const minute = date.getMinutes();
@@ -34,7 +42,7 @@ updateTime = function () {
     document.getElementById("clockTimeOfDay").textContent = timeSuffix;
 };
 
-updateGreeting = function () {
+function updateGreeting() {
     const hour = new Date().getHours();
     let greeting;
 
@@ -50,28 +58,92 @@ updateGreeting = function () {
     document.getElementById("greeting").textContent = "Good " + greeting + ".";
 };
 
-updateWeather = function () {
+function updateWeather() {
     navigator.geolocation.getCurrentPosition((position) => {
 
         fetch(
             "https://api.openweathermap.org/data/2.5/weather?lat=" +
-                position.coords.latitude +
-                "&lon=" +
-                position.coords.longitude +
-                "&appid=0fc2f3683a745d582fa88d28c3d85107&units=imperial"
+            position.coords.latitude +
+            "&lon=" +
+            position.coords.longitude +
+            "&appid=0fc2f3683a745d582fa88d28c3d85107&units=imperial"
         )
-        .then((response) => response.json())
-        .then((data) => 
-        {
-            const temperature = Math.trunc(data.main.temp);
-            const weatherCondition = data.weather[0].main;
-            document.getElementById("temperature").textContent = temperature + "°F";
-            document.getElementById("weatherCondition").textContent = weatherCondition;
-            document.getElementById("divider").textContent = "|"
-        })
+            .then((response) => response.json())
+            .then((data) => {
+                const temperature = Math.trunc(data.main.temp);
+                const weatherCondition = data.weather[0].main;
+                document.getElementById("temperature").textContent = temperature + "°F";
+                document.getElementById("weatherCondition").textContent = weatherCondition;
+                document.getElementById("divider").textContent = "|"
+            })
     });
 };
 
 setInterval(updateTime, 10);
 setInterval(updateGreeting, 60000);
 setInterval(updateWeather, 1200000);
+
+function updateBackground() {
+    const skyElements = document.getElementsByClassName("sky");
+
+
+    for (let i = 0; i < skyElements.length; i++) {
+        console.log("yo");
+        skyElements.item(i).style.fill = nightColor;
+    }
+
+};
+
+
+
+// COLOR GRADIENT STUFF //
+function componentToHex(c) {
+    let hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+}
+
+function rgbToHex(r, g, b) {
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
+function hexToRgb(hex) {
+    let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
+function getColorGradient(mainColors, gradientSize) {
+    console.log(gradientSize);
+    console.log(mainColors.length);
+    if (mainColors.length < 2) {
+        console.log("mainColors should be an array of at least two colors");
+        return [];
+    } else if (gradientSize % (mainColors.length - 1) != 0) {
+        console.log("uneven gradient size");
+        return [];
+    }
+
+    const colors = [];
+    const colorsPerInterval = gradientSize / (mainColors.length - 1);
+
+    for (let i = 0; i < mainColors.length - 1; i++) {
+        const color1 = mainColors[i];
+        const color2 = mainColors[i + 1];
+
+        let r1, g1, b1 = hexToRgb(color1);
+        let r2, g2, b2 = hexToRgb(color2);
+        const rIncrement = (r2 - r1) / colorsPerInterval;
+        const gIncrement = (g2 - g1) / colorsPerInterval;
+        const bIncrement = (b2 - b1) / colorsPerInterval;
+
+        for (let j = 0; j < colorsPerInterval; j++) {
+            const newColor = rgbToHex(r1 + rIncrement * j, g1 + gIncrement * j, b1 + bIncrement * j);
+            colors.push(newColor);
+        }
+    }
+
+    return colors;
+}

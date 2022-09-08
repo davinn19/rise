@@ -52,3 +52,7 @@ body,
 #weather {
     gap: 5px;
 }
+
+.mountain {
+    stroke-width: 0;
+}
