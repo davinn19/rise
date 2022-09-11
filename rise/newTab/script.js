@@ -85,12 +85,36 @@ setInterval(updateWeather, 1200000);
 
 function updateBackground() {
     const skyElements = document.getElementsByClassName("sky");
+    const sun = document.getElementById("sun");
+    const moon = document.getElementById("moon");
+
+    const sunMoonX = 110;
 
     for (let i = 0; i < skyElements.length; i++) {
         skyElements.item(i).style.fill = nightColor;
     }
 
+    sun.setAttribute("transform", "translate(" + sunMoonX + "," + getSunPosition() + ")");
+    moon.setAttribute("transform", "translate(" + sunMoonX + "," + getMoonPosition() + ")");
 };
+
+
+// TODO combine these more concisely
+// sun & moon height based on cos(πx / 720), where x is the minutes after midnight
+function getSunPosition() {
+    const sunMoonPeak = 30;
+    const date = new Date();
+    const minutesPastMidnight = date.getHours() * 60 + date.getMinutes();
+    console.log(minutesPastMidnight);
+    return 60 * Math.cos(Math.PI * minutesPastMidnight / 720) + 90;
+}
+
+function getMoonPosition() {
+    const sunMoonPeak = 30;
+    const date = new Date();
+    const minutesPastMidnight = date.getHours() * 60 + date.getMinutes();
+    return -60 * Math.cos(Math.PI * minutesPastMidnight / 720) + 90;
+}
 
 
 
