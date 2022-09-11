@@ -2,17 +2,17 @@ const nightColor = "#070B34";
 const sunriseColor = "#7b95b6";
 const dayColor = "#87ceeb";
 const sunsetColor = "#FF5677";
-const sunriseGradient = getColorGradient([nightColor, sunriseColor, dayColor], 60); // starts at 6:01 am - ends at 7:00 am
-const sunsetGradient = getColorGradient([dayColor, sunsetColor, nightColor], 60); // starts at 8:01 pm - ends at 9:00 pm
+const sunriseGradient = getColorGradient([nightColor, sunriseColor, dayColor], 60); // starts at 6:31 am - ends at 7:30 am
+const sunsetGradient = getColorGradient([dayColor, sunsetColor, nightColor], 60); // starts at 7:31 pm - ends at 8:00 pm
 
 window.onload = function () {
-    updateTime();
+    updateClock();
     updateGreeting();
     updateWeather();
     updateBackground();
 };
 
-function updateTime() {
+function updateClock() {
     const date = new Date();
     let hour = date.getHours();
     const minute = date.getMinutes();
@@ -79,7 +79,7 @@ function updateWeather() {
     });
 };
 
-setInterval(updateTime, 10);
+setInterval(updateClock, 10);
 setInterval(updateGreeting, 60000);
 setInterval(updateWeather, 1200000);
 
@@ -89,34 +89,34 @@ function updateBackground() {
     const moon = document.getElementById("moon");
 
     const sunMoonX = 110;
+    const sunMoonPeak = 30;
+    const sunMoonDip = 150;
+    const date = new Date();
+    const minutesPastMidnight = date.getHours() * 60 + date.getMinutes();
 
-    for (let i = 0; i < skyElements.length; i++) {
-        skyElements.item(i).style.fill = nightColor;
+    function updateSkyColor() {
+        for (let i = 0; i < skyElements.length; i++) {
+            skyElements.item(i).style.fill = nightColor;
+        }
     }
 
-    sun.setAttribute("transform", "translate(" + sunMoonX + "," + getSunPosition() + ")");
-    moon.setAttribute("transform", "translate(" + sunMoonX + "," + getMoonPosition() + ")");
+    function updateSunMoonPosition() {
+        sun.setAttribute("transform", "translate(" + sunMoonX + "," + getSunHeight() + ")");
+        moon.setAttribute("transform", "translate(" + sunMoonX + "," + getMoonHeight() + ")");
+    }
+
+    // TODO combine these more concisely, try to sync with actual sunrise/sunset, get value based on peak/dip values
+    function getSunHeight() {
+        return 60 * Math.cos(Math.PI * minutesPastMidnight / 720) + 90;
+    }
+
+    function getMoonHeight() {
+        return -60 * Math.cos(Math.PI * minutesPastMidnight / 720) + 90;
+    }
+
+    updateSkyColor();
+    updateSunMoonPosition();
 };
-
-
-// TODO combine these more concisely
-// sun & moon height based on cos(πx / 720), where x is the minutes after midnight
-function getSunPosition() {
-    const sunMoonPeak = 30;
-    const date = new Date();
-    const minutesPastMidnight = date.getHours() * 60 + date.getMinutes();
-    console.log(minutesPastMidnight);
-    return 60 * Math.cos(Math.PI * minutesPastMidnight / 720) + 90;
-}
-
-function getMoonPosition() {
-    const sunMoonPeak = 30;
-    const date = new Date();
-    const minutesPastMidnight = date.getHours() * 60 + date.getMinutes();
-    return -60 * Math.cos(Math.PI * minutesPastMidnight / 720) + 90;
-}
-
-
 
 // COLOR GRADIENT STUFF //
 function componentToHex(c) {
