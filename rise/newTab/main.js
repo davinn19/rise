@@ -1,9 +1,15 @@
+// Presets for sky color
 const nightColor = "#070B34";
 const sunriseColor = "#7b95b6";
 const dayColor = "#87ceeb";
 const sunsetColor = "#FF5677";
 const sunriseGradient = getColorGradient([nightColor, sunriseColor, dayColor], 60); // starts at 6:31 am - ends at 7:30 am
-const sunsetGradient = getColorGradient([dayColor, sunsetColor, nightColor], 60); // starts at 7:31 pm - ends at 8:00 pm
+const sunsetGradient = getColorGradient([dayColor, sunsetColor, nightColor], 60); // starts at 7:31 pm - ends at 8:30 pm
+const sunriseStart = 6 * 60 + 31;   // 6:31 AM
+const sunriseEnd = 7 * 60 + 30;     // 7:30 AM
+const sunsetStart = (12 + 6) * 60 + 31;   // 6:31 PM
+const sunsetEnd = (12 + 7) * 60 + 30;     // 7:30 PM
+
 
 window.onload = function () {
     updateClock();
@@ -59,25 +65,9 @@ function updateGreeting() {
 };
 
 function updateWeather() {
-    navigator.geolocation.getCurrentPosition((position) => {
-
-        fetch(
-            "https://api.openweathermap.org/data/2.5/weather?lat=" +
-            position.coords.latitude +
-            "&lon=" +
-            position.coords.longitude +
-            "&appid=0fc2f3683a745d582fa88d28c3d85107&units=imperial"
-        )
-            .then((response) => response.json())
-            .then((data) => {
-                const temperature = Math.trunc(data.main.temp);
-                const weatherCondition = data.weather[0].main;
-                document.getElementById("temperature").textContent = temperature + "°F";
-                document.getElementById("weatherCondition").textContent = weatherCondition;
-                document.getElementById("divider").textContent = "|"
-            })
-    });
-};
+    console.log(localStorage);
+    // TODO implement
+}
 
 setInterval(updateClock, 10);
 setInterval(updateGreeting, 60000);
@@ -89,29 +79,45 @@ function updateBackground() {
     const moon = document.getElementById("moon");
 
     const sunMoonX = 110;
-    const sunMoonPeak = 30;
-    const sunMoonDip = 150;
+    const sunMoonPeak = 20;
+    const sunMoonHorizon = 70;
     const date = new Date();
     const minutesPastMidnight = date.getHours() * 60 + date.getMinutes();
 
     function updateSkyColor() {
+
+        let skyColor;
+        if (minutesPastMidnight > sunsetEnd || minutesPastMidnight < sunriseStart) {
+            skyColor = nightColor;
+        } else if (minutesPastMidnight >= sunsetStart) {    // find sunset gradient
+            const minutesPastSunset = minutesPastMidnight - sunsetStart;
+            skyColor = sunsetGradient[minutesPastSunset];
+        } else if (minutesPastMidnight > sunriseEnd) {
+            skyColor = dayColor;
+        } else {                // find sunrise gradient
+            const minutesPastSunrise = minutesPastMidnight - sunriseStart;
+            skyColor = sunriseGradient[minutesPastSunrise];
+        }
+
         for (let i = 0; i < skyElements.length; i++) {
-            skyElements.item(i).style.fill = nightColor;
+            skyElements.item(i).style.fill = skyColor;
         }
     }
 
     function updateSunMoonPosition() {
-        sun.setAttribute("transform", "translate(" + sunMoonX + "," + getSunHeight() + ")");
-        moon.setAttribute("transform", "translate(" + sunMoonX + "," + getMoonHeight() + ")");
+        sun.setAttribute("transform", "translate(" + sunMoonX + "," + getSunMoonHeight("sun") + ")");
+        moon.setAttribute("transform", "translate(" + sunMoonX + "," + getSunMoonHeight("moon") + ")");
     }
 
-    // TODO combine these more concisely, try to sync with actual sunrise/sunset, get value based on peak/dip values
-    function getSunHeight() {
-        return 60 * Math.cos(Math.PI * minutesPastMidnight / 720) + 90;
-    }
+    function getSunMoonHeight(sunOrMoon) {
+        let modifier = 1;
+        if (sunOrMoon == "moon") {
+            modifier = -1;
+        }
+        
+        return (sunMoonHorizon - sunMoonPeak) * modifier * Math.cos(Math.PI * (minutesPastMidnight - 60) / 720) + sunMoonHorizon;
 
-    function getMoonHeight() {
-        return -60 * Math.cos(Math.PI * minutesPastMidnight / 720) + 90;
+
     }
 
     updateSkyColor();
