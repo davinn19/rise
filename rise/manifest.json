@@ -15,5 +15,13 @@
 	},
 	"chrome_url_overrides" : {
 		"newtab": "newTab/index.html"
-	}
+	},
+	"background" : {
+		"scripts": ["backgroundScript.js"],
+		"persistent": true
+	},
+	"permissions" : [
+		"alarms",
+		"tabs"
+	]
 }
