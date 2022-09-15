@@ -2,20 +2,29 @@
 const nightColor = "#070B34";
 const sunriseColor = "#7b95b6";
 const dayColor = "#87ceeb";
-const sunsetColor = "#FF5677";
+const sunsetColor = "#FB9062";
 const sunriseGradient = getColorGradient([nightColor, sunriseColor, dayColor], 60); // starts at 6:31 am - ends at 7:30 am
 const sunsetGradient = getColorGradient([dayColor, sunsetColor, nightColor], 60); // starts at 7:31 pm - ends at 8:30 pm
 const sunriseStart = 6 * 60 + 31;   // 6:31 AM
 const sunriseEnd = 7 * 60 + 30;     // 7:30 AM
 const sunsetStart = (12 + 6) * 60 + 31;   // 6:31 PM
 const sunsetEnd = (12 + 7) * 60 + 30;     // 7:30 PM
+let minutesPastMidnight = 0;
 
+// TEST time changes
 
 window.onload = function () {
     updateClock();
     updateGreeting();
     updateWeather();
     updateBackground();
+
+    let slider = document.getElementById("myRange");
+    // Update the current slider value (each time you drag the slider handle)
+    slider.oninput = function() {
+        minutesPastMidnight = this.value;
+    } 
+
 };
 
 function updateClock() {
@@ -65,13 +74,17 @@ function updateGreeting() {
 };
 
 function updateWeather() {
-    console.log(localStorage);
+    // console.log(localStorage);
     // TODO implement
 }
 
 setInterval(updateClock, 10);
-setInterval(updateGreeting, 60000);
-setInterval(updateWeather, 1200000);
+setInterval(updateGreeting, 10);
+setInterval(updateWeather, 10);
+setInterval(updateBackground, 10);
+// setInterval(updateGreeting, 60000);
+// setInterval(updateWeather, 1200000);
+
 
 function updateBackground() {
     const skyElements = document.getElementsByClassName("sky");
@@ -82,10 +95,10 @@ function updateBackground() {
     const sunMoonPeak = 20;
     const sunMoonHorizon = 70;
     const date = new Date();
-    const minutesPastMidnight = date.getHours() * 60 + date.getMinutes();
+    // const minutesPastMidnight = date.getHours() * 60 + date.getMinutes();
 
     function updateSkyColor() {
-
+        console.log(minutesPastMidnight);
         let skyColor;
         if (minutesPastMidnight > sunsetEnd || minutesPastMidnight < sunriseStart) {
             skyColor = nightColor;
@@ -114,10 +127,7 @@ function updateBackground() {
         if (sunOrMoon == "moon") {
             modifier = -1;
         }
-        
         return (sunMoonHorizon - sunMoonPeak) * modifier * Math.cos(Math.PI * (minutesPastMidnight - 60) / 720) + sunMoonHorizon;
-
-
     }
 
     updateSkyColor();
