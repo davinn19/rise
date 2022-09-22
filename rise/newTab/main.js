@@ -16,6 +16,8 @@ let minutesPastMidnight = 0;
 window.onload = function () {
     updateClock();
     updateGreeting();
+
+    getSunData();
     updateBackground();
 
     // let slider = document.getElementById("myRange");
@@ -24,8 +26,6 @@ window.onload = function () {
     //     minutesPastMidnight = this.value;
     //     updateBackground();
     // } 
-
-    removeLoadingScreen();
 };
 
 function updateClock() {
@@ -82,15 +82,23 @@ setInterval(updateBackground, 10);
 
 function getSunData() {
     // local storage data format : "[sun/moon]-[month]-[day]-[year]"
-    const currentDate = Date();
-    const todayDataLabel = "sun-" + currentDate.getMonth() + currentDate.getDate() + currentDate.getYear();
-    const todayData = localStorage.getItem(todayDataLabel);
+    const today = new Date();
+    const todayDataLabel = "sun-" + today.getMonth() + today.getDate() + today.getYear();
+    let todayData = localStorage.getItem(todayDataLabel);
     if (todayData == null) {    // data hasn't been fetched for today yet, clear all old data and fetch new data
+        // TODO implement
         localStorage.clear();
-        // TODO implement
-    } else {    // data for today has already been fetched, assign global variables based on the data saved
-        // TODO implement
-    }
+        navigator.geolocation.getCurrentPosition((position) => {
+            fetch(
+                "https://api.ipgeolocation.io/astronomy?apiKey=b599741103fc4cccae8e98313394a59b&lat=" + position.coords.latitude + "&long=" + position.coords.longitude
+            )
+                .then((response) => response.json())
+                .then((data) => {
+                    console.log(data);
+                    // TODO convert json data to string and save to local storage
+                })
+        });
+    } 
 
     removeLoadingScreen();
 }
