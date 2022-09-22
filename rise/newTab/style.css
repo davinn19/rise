@@ -30,6 +30,13 @@ body,
     align-items: center;
 }
 
+#loadingScreen {
+    z-index: 3;
+    background-color: white;
+    opacity: 1;
+    transition: opacity 1s;
+}
+
 .rowContainer {
     display: flex;
     width: 100%;

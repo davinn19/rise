@@ -16,15 +16,16 @@ let minutesPastMidnight = 0;
 window.onload = function () {
     updateClock();
     updateGreeting();
-    updateWeather();
     updateBackground();
 
-    let slider = document.getElementById("myRange");
-    // Update the current slider value (each time you drag the slider handle)
-    slider.oninput = function() {
-        minutesPastMidnight = this.value;
-    } 
+    // let slider = document.getElementById("myRange");
+    // // Update the current slider value (each time you drag the slider handle)
+    // slider.oninput = function() {
+    //     minutesPastMidnight = this.value;
+    //     updateBackground();
+    // } 
 
+    removeLoadingScreen();
 };
 
 function updateClock() {
@@ -73,18 +74,26 @@ function updateGreeting() {
     document.getElementById("greeting").textContent = "Good " + greeting + ".";
 };
 
-function updateWeather() {
-    // console.log(localStorage);
-    // TODO implement
-}
 
 setInterval(updateClock, 10);
 setInterval(updateGreeting, 10);
-setInterval(updateWeather, 10);
 setInterval(updateBackground, 10);
 // setInterval(updateGreeting, 60000);
-// setInterval(updateWeather, 1200000);
 
+function getSunData() {
+    // local storage data format : "[sun/moon]-[month]-[day]-[year]"
+    const currentDate = Date();
+    const todayDataLabel = "sun-" + currentDate.getMonth() + currentDate.getDate() + currentDate.getYear();
+    const todayData = localStorage.getItem(todayDataLabel);
+    if (todayData == null) {    // data hasn't been fetched for today yet, clear all old data and fetch new data
+        localStorage.clear();
+        // TODO implement
+    } else {    // data for today has already been fetched, assign global variables based on the data saved
+        // TODO implement
+    }
+
+    removeLoadingScreen();
+}
 
 function updateBackground() {
     const skyElements = document.getElementsByClassName("sky");
@@ -133,6 +142,12 @@ function updateBackground() {
     updateSkyColor();
     updateSunMoonPosition();
 };
+
+function removeLoadingScreen() {
+    const loadingScreen = document.getElementById("loadingScreen");
+    loadingScreen.style.opacity = 0;
+    loadingScreen.addEventListener("transitionend", () => loadingScreen.remove());
+}
 
 // COLOR GRADIENT STUFF //
 function componentToHex(c) {
