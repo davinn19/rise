@@ -5,10 +5,10 @@ const dayColor = "#87ceeb";
 const sunsetColor = "#FB9062";
 const sunriseGradient = getColorGradient([nightColor, sunriseColor, dayColor], 60); // starts at 6:31 am - ends at 7:30 am
 const sunsetGradient = getColorGradient([dayColor, sunsetColor, nightColor], 60); // starts at 7:31 pm - ends at 8:30 pm
-const sunriseStart = 6 * 60 + 31;   // 6:31 AM
-const sunriseEnd = 7 * 60 + 30;     // 7:30 AM
-const sunsetStart = (12 + 6) * 60 + 31;   // 6:31 PM
-const sunsetEnd = (12 + 7) * 60 + 30;     // 7:30 PM
+const sunriseStart = 6 * 60 + 31; // 6:31 AM
+const sunriseEnd = 7 * 60 + 30; // 7:30 AM
+const sunsetStart = (12 + 6) * 60 + 31; // 6:31 PM
+const sunsetEnd = (12 + 7) * 60 + 30; // 7:30 PM
 let minutesPastMidnight = 0;
 
 // TEST time changes
@@ -17,7 +17,7 @@ window.onload = function () {
     updateClock();
     updateGreeting();
 
-    getSunData();
+    loadAstronomyData();
     updateBackground();
 
     // let slider = document.getElementById("myRange");
@@ -25,7 +25,7 @@ window.onload = function () {
     // slider.oninput = function() {
     //     minutesPastMidnight = this.value;
     //     updateBackground();
-    // } 
+    // }
 };
 
 function updateClock() {
@@ -53,10 +53,9 @@ function updateClock() {
         minuteString = "" + minute;
     }
 
-    document.getElementById("clockNumbers").textContent =
-        "" + hour + ":" + minuteString;
+    document.getElementById("clockNumbers").textContent = "" + hour + ":" + minuteString;
     document.getElementById("clockTimeOfDay").textContent = timeSuffix;
-};
+}
 
 function updateGreeting() {
     const hour = new Date().getHours();
@@ -72,35 +71,62 @@ function updateGreeting() {
         greeting = "morning";
     }
     document.getElementById("greeting").textContent = "Good " + greeting + ".";
-};
-
+}
 
 setInterval(updateClock, 10);
-setInterval(updateGreeting, 10);
 setInterval(updateBackground, 10);
-// setInterval(updateGreeting, 60000);
+setInterval(updateGreeting, 10000);
 
-function getSunData() {
-    // local storage data format : "[sun/moon]-[month]-[day]-[year]"
-    const today = new Date();
-    const todayDataLabel = "sun-" + today.getMonth() + today.getDate() + today.getYear();
-    let todayData = localStorage.getItem(todayDataLabel);
-    if (todayData == null) {    // data hasn't been fetched for today yet, clear all old data and fetch new data
-        // TODO implement
-        localStorage.clear();
+function loadAstronomyData() {
+    function getDateString() {
+        const today = new Date();
+        const dateString =
+            today.getFullYear() +
+            "-" +
+            (today.getMonth() + 1).toLocaleString("en-US", {
+                minimumIntegerDigits: 2,
+                useGrouping: false,
+            }) +
+            "-" +
+            today.getDate().toLocaleString("en-US", {
+                minimumIntegerDigits: 2,
+                useGrouping: false,
+            });
+        return dateString;
+    }
+
+    function removeLoadingScreen() {
+        const loadingScreen = document.getElementById("loadingScreen");
+        loadingScreen.style.opacity = 0;
+        loadingScreen.addEventListener("transitionend", () => loadingScreen.remove());
+    }
+
+    function fetchNewestAPIData() {
         navigator.geolocation.getCurrentPosition((position) => {
             fetch(
-                "https://api.ipgeolocation.io/astronomy?apiKey=b599741103fc4cccae8e98313394a59b&lat=" + position.coords.latitude + "&long=" + position.coords.longitude
+                "https://api.ipgeolocation.io/astronomy?apiKey=b599741103fc4cccae8e98313394a59b&lat=" +
+                    position.coords.latitude +
+                    "&long=" +
+                    position.coords.longitude
             )
                 .then((response) => response.json())
-                .then((data) => {
-                    console.log(data);
-                    // TODO convert json data to string and save to local storage
-                })
+                .then((responseJSON) => {
+                    localStorage.setItem("rawData", JSON.stringify(responseJSON));
+                    removeLoadingScreen();
+                    return responseJSON;
+                });
         });
-    } 
+    }
 
-    removeLoadingScreen();
+    let jsonData = JSON.parse(localStorage.getItem("rawData"));
+
+    if (jsonData == null || jsonData.date != getDateString()) {
+        localStorage.clear();
+        jsonData = fetchNewestAPIData();
+    } else {
+        removeLoadingScreen();
+    }
+    console.log(jsonData);
 }
 
 function updateBackground() {
@@ -115,16 +141,17 @@ function updateBackground() {
     // const minutesPastMidnight = date.getHours() * 60 + date.getMinutes();
 
     function updateSkyColor() {
-        console.log(minutesPastMidnight);
         let skyColor;
         if (minutesPastMidnight > sunsetEnd || minutesPastMidnight < sunriseStart) {
             skyColor = nightColor;
-        } else if (minutesPastMidnight >= sunsetStart) {    // find sunset gradient
+        } else if (minutesPastMidnight >= sunsetStart) {
+            // find sunset gradient
             const minutesPastSunset = minutesPastMidnight - sunsetStart;
             skyColor = sunsetGradient[minutesPastSunset];
         } else if (minutesPastMidnight > sunriseEnd) {
             skyColor = dayColor;
-        } else {                // find sunrise gradient
+        } else {
+            // find sunrise gradient
             const minutesPastSunrise = minutesPastMidnight - sunriseStart;
             skyColor = sunriseGradient[minutesPastSunrise];
         }
@@ -135,8 +162,14 @@ function updateBackground() {
     }
 
     function updateSunMoonPosition() {
-        sun.setAttribute("transform", "translate(" + sunMoonX + "," + getSunMoonHeight("sun") + ")");
-        moon.setAttribute("transform", "translate(" + sunMoonX + "," + getSunMoonHeight("moon") + ")");
+        sun.setAttribute(
+            "transform",
+            "translate(" + sunMoonX + "," + getSunMoonHeight("sun") + ")"
+        );
+        moon.setAttribute(
+            "transform",
+            "translate(" + sunMoonX + "," + getSunMoonHeight("moon") + ")"
+        );
     }
 
     function getSunMoonHeight(sunOrMoon) {
@@ -144,17 +177,16 @@ function updateBackground() {
         if (sunOrMoon == "moon") {
             modifier = -1;
         }
-        return (sunMoonHorizon - sunMoonPeak) * modifier * Math.cos(Math.PI * (minutesPastMidnight - 60) / 720) + sunMoonHorizon;
+        return (
+            (sunMoonHorizon - sunMoonPeak) *
+                modifier *
+                Math.cos((Math.PI * (minutesPastMidnight - 60)) / 720) +
+            sunMoonHorizon
+        );
     }
 
     updateSkyColor();
     updateSunMoonPosition();
-};
-
-function removeLoadingScreen() {
-    const loadingScreen = document.getElementById("loadingScreen");
-    loadingScreen.style.opacity = 0;
-    loadingScreen.addEventListener("transitionend", () => loadingScreen.remove());
 }
 
 // COLOR GRADIENT STUFF //
@@ -169,11 +201,13 @@ function rgbToHex(r, g, b) {
 
 function hexToRgb(hex) {
     let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-    } : null;
+    return result
+        ? {
+              r: parseInt(result[1], 16),
+              g: parseInt(result[2], 16),
+              b: parseInt(result[3], 16),
+          }
+        : null;
 }
 
 function getColorGradient(mainColors, gradientSize) {
@@ -197,7 +231,11 @@ function getColorGradient(mainColors, gradientSize) {
         const bIncrement = Math.round((color2.b - color1.b) / colorsPerInterval);
 
         for (let j = 0; j < colorsPerInterval; j++) {
-            const newColor = rgbToHex(color1.r + rIncrement * j, color1.g + gIncrement * j, color1.b + bIncrement * j);
+            const newColor = rgbToHex(
+                color1.r + rIncrement * j,
+                color1.g + gIncrement * j,
+                color1.b + bIncrement * j
+            );
             colors.push(newColor);
         }
     }
