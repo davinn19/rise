@@ -12,13 +12,7 @@ const sunsetEnd = (12 + 7) * 60 + 30; // 7:30 PM
 let minutesPastMidnight = 0;
 
 // variables for calculating sun/moon altitude
-let givenTimeMins;
-let givenSunAltitude;
-let sunriseTimeMins;
-let sunsetTimeMins;
-let givenMoonAltitude;
-let moonriseTimeMins;
-let moonsetTimeMins;
+let jsonData;
 
 window.onload = function () {
     updateClock();
@@ -124,38 +118,52 @@ function loadAstronomyData() {
             )
                 .then((response) => response.json())
                 .then((responseJSON) => {
-                    localStorage.setItem("rawData", JSON.stringify(responseJSON));
+                    const givenTimeMins = getMinsFromTimeString(responseJSON.current_time);
+                    const givenSunAltitude = responseJSON.sun_altitude;
+                    const sunriseTimeMins = getMinsFromTimeString(responseJSON.sunrise);
+                    const sunsetTimeMins = getMinsFromTimeString(responseJSON.sunset);
+                    const givenMoonAltitude = responseJSON.moon_altitude;
+                    const moonriseTimeMins = getMinsFromTimeString(responseJSON.moonrise);
+                    const moonsetTimeMins = getMinsFromTimeString(responseJSON.moonset);
+
+                    const formattedJSONData = {
+                        "date" : getDateString(),
+                        "givenTimeMins" : givenTimeMins,
+                        "givenSunAltitude" : givenSunAltitude,
+                        "sunriseTimeMins" : sunriseTimeMins,
+                        "sunsetTimeMins" : sunsetTimeMins,
+                        "givenMoonAltitude" : givenMoonAltitude,
+                        "moonriseTimeMins" : moonriseTimeMins,
+                        "moonsetTimeMins" : moonsetTimeMins,
+
+                        // TODO use these to calculate sun/moon altitude, put the non-coefficient formula in a separate function
+                        "sunAltitudeCoefficient" : givenSunAltitude / Math.sin(Math.PI * (givenTimeMins - sunriseTimeMins) / (sunsetTimeMins - sunriseTimeMins)),
+                        "moonAltitudeCoefficient" : givenMoonAltitude / Math.sin(Math.PI * (givenTimeMins - moonriseTimeMins) / (moonsetTimeMins - moonriseTimeMins))
+                    }
+
+                    localStorage.setItem("data", JSON.stringify(formattedJSONData));
                     removeLoadingScreen();
                     return responseJSON;
                 });
         });
     }
 
-    let jsonData = JSON.parse(localStorage.getItem("rawData"));
+    jsonData = JSON.parse(localStorage.getItem("data"));
 
     if (jsonData == null || jsonData.date != getDateString()) {
+        jsonData = null;
         localStorage.clear();
         jsonData = fetchNewestAPIData();
     } else {
         removeLoadingScreen();
     }
-
-    // TODO store these variables in local storage instead of the raw json data
-    givenTimeMins = getMinsFromTimeString(jsonData.current_time);
-    givenSunAltitude = jsonData.sun_altitude;
-    sunriseTimeMins = getMinsFromTimeString(jsonData.sunrise);
-    sunsetTimeMins = getMinsFromTimeString(jsonData.sunset);
-    givenMoonAltitude = jsonData.moon_altitude;
-    moonriseTimeMins = getMinsFromTimeString(jsonData.moonrise);
-    moonsetTimeMins = getMinsFromTimeString(jsonData.moonset);
-
-    // TODO use these to calculate sun/moon altitude, put the non-coefficient formula in a separate function
-    sunAltitudeCoefficient = givenSunAltitude / Math.sin(Math.PI * (givenTimeMins - sunriseTimeMins) / (sunsetTimeMins - sunriseTimeMins));
-    moonAltitudeCoefficient = givenMoonAltitude / Math.sin(Math.PI * (givenTimeMins - moonriseTimeMins) / (moonsetTimeMins - moonriseTimeMins));
-    
 }
 
 function updateBackground() {
+    if (jsonData == null) {
+        console.log("No json data loaded.");
+        return;
+    }
     const skyElements = document.getElementsByClassName("sky");
     const sun = document.getElementById("sun");
     const moon = document.getElementById("moon");
