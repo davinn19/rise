@@ -18,12 +18,12 @@ window.onload = function () {
     loadAstronomyData();
     updateBackground();
 
-    // let slider = document.getElementById("myRange");
-    // // Update the current slider value (each time you drag the slider handle)
-    // slider.oninput = function() {
-    //     minutesPastMidnight = this.value;
-    //     updateBackground();
-    // }
+    let slider = document.getElementById("myRange");
+    // Update the current slider value (each time you drag the slider handle)
+    slider.oninput = function() {
+        minutesPastMidnight = this.value;
+        updateBackground();
+    }
 };
 
 function updateClock() {
@@ -145,6 +145,14 @@ function loadAstronomyData() {
                     return responseJSON;
                 });
         });
+
+        const currentYear = new Date().getFullYear();
+        fetch("https://craigchamberlain.github.io/moon-data/api/new-moon-data/" +  + "/")
+        .then((response) => response.json())
+        .then((responseJSON) => {
+            localStorage.setItem()
+
+        });
     }
 
     jsonData = JSON.parse(localStorage.getItem("data"));
@@ -179,7 +187,6 @@ function updateBackground() {
     const sunsetStart = jsonData.sun.setTimeMins;
     const sunsetEnd = sunsetStart + 88;
 
-    // TODO use more accurate color gradients
     function updateSkyColor() {
         let skyColor;
         if (minutesPastMidnight > sunsetEnd || minutesPastMidnight < sunriseStart) {
@@ -213,9 +220,27 @@ function updateBackground() {
     }
 
     function updateNightCelestialTransparency() {
-        const nightCelestials = getElementsByClassName("nightCelestial");
-        const sunAltitude = (getSunAltitude() - celestialHorizon) * -1 / (celestialHorizon - celestialPeak);
-        // TODO finish
+        // if sun altitude is > 0, night celestials are invisible
+        // if sun altitude is < -10, transition opacity
+        
+        const nightCelestials = document.getElementsByClassName("nightCelestial");
+        let opacity;
+        const sunAlitutde = getSunAltitude() * 90;
+        console.log(sunAlitutde);
+        if (sunAlitutde > 0) {
+            opacity = 0;
+        }
+        else if (sunAlitutde < -10) {
+            opacity = 1;
+        }
+        else {
+            opacity = -sunAlitutde / 10;
+        }
+
+        for (let i = 0; i < nightCelestials.length; i++) {
+            const nightCelestial = nightCelestials[i];
+            nightCelestial.style.opacity = opacity;
+        }
     }
 
     function updateMoonPhase() {
@@ -230,6 +255,7 @@ function updateBackground() {
         return getCelestialAltitude(jsonData.moon);
     }
 
+    // TODO normalize celestial altitude across entire program
     function getCelestialAltitude(celestialJSON) {
         // TODO have some proper documentation explaining the formula
         return celestialJSON.formulaCoefficient * Math.sin(Math.PI * (minutesPastMidnight - celestialJSON.riseTimeMins) / (celestialJSON.setTimeMins - celestialJSON.riseTimeMins));
@@ -242,6 +268,7 @@ function updateBackground() {
 
     updateSkyColor();
     updateCelestialPosition();
+    updateNightCelestialTransparency();
 }
 
 // COLOR GRADIENT STUFF //
@@ -294,7 +321,6 @@ function getColorGradient(mainColors, gradientSize) {
             colors.push(newColor);
         }
     }
-    console.log(colors);
 
     return colors;
 }
