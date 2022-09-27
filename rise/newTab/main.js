@@ -201,32 +201,47 @@ function updateBackground() {
         }
     }
 
-    function updateSunMoonPosition() {
+    function updateCelestialPosition() {
         sun.setAttribute(
             "transform",
-            "translate(" + sunMoonX + "," + getSunMoonHeight("sun") + ")"
+            "translate(" + sunX + "," + formatCelestialAltitude(getSunAltitude()) + ")"
         );
         moon.setAttribute(
             "transform",
-            "translate(" + sunMoonX + "," + getSunMoonHeight("moon") + ")"
+            "translate(" + moonX + "," + formatCelestialAltitude(getMoonAltitude()) + ")"
         );
     }
 
-    function getSunMoonHeight(sunOrMoon) {
-        let modifier = 1;
-        if (sunOrMoon == "moon") {
-            modifier = -1;
-        }
-        return (
-            (sunMoonHorizon - sunMoonPeak) *
-                modifier *
-                Math.cos((Math.PI * (minutesPastMidnight - 60)) / 720) +
-            sunMoonHorizon
-        );
+    function updateNightCelestialTransparency() {
+        const nightCelestials = getElementsByClassName("nightCelestial");
+        const sunAltitude = (getSunAltitude() - celestialHorizon) * -1 / (celestialHorizon - celestialPeak);
+        // TODO finish
+    }
+
+    function updateMoonPhase() {
+        // TODO implement
+    }
+
+    function getSunAltitude() {
+        return getCelestialAltitude(jsonData.sun);
+    }
+
+    function getMoonAltitude() {
+        return getCelestialAltitude(jsonData.moon);
+    }
+
+    function getCelestialAltitude(celestialJSON) {
+        // TODO have some proper documentation explaining the formula
+        return celestialJSON.formulaCoefficient * Math.sin(Math.PI * (minutesPastMidnight - celestialJSON.riseTimeMins) / (celestialJSON.setTimeMins - celestialJSON.riseTimeMins));
+    }
+
+    function formatCelestialAltitude(altitude) {
+        // TODO have some proper documentation explaining the formula
+        return -1 * (celestialHorizon - celestialPeak) * altitude + celestialHorizon;
     }
 
     updateSkyColor();
-    updateSunMoonPosition();
+    updateCelestialPosition();
 }
 
 // COLOR GRADIENT STUFF //
