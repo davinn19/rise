@@ -129,16 +129,18 @@ function loadAstronomyData() {
                     const formattedJSONData = {
                         "date" : getDateString(),
                         "givenTimeMins" : givenTimeMins,
-                        "givenSunAltitude" : givenSunAltitude,
-                        "sunriseTimeMins" : sunriseTimeMins,
-                        "sunsetTimeMins" : sunsetTimeMins,
-                        "givenMoonAltitude" : givenMoonAltitude,
-                        "moonriseTimeMins" : moonriseTimeMins,
-                        "moonsetTimeMins" : moonsetTimeMins,
-
-                        // TODO use these to calculate sun/moon altitude, put the non-coefficient formula in a separate function
-                        "sunAltitudeCoefficient" : givenSunAltitude / Math.sin(Math.PI * (givenTimeMins - sunriseTimeMins) / (sunsetTimeMins - sunriseTimeMins)),
-                        "moonAltitudeCoefficient" : givenMoonAltitude / Math.sin(Math.PI * (givenTimeMins - moonriseTimeMins) / (moonsetTimeMins - moonriseTimeMins))
+                        "sun" : {
+                            "givenAltitude" : givenSunAltitude,
+                            "riseTimeMins" : sunriseTimeMins,
+                            "setTimeMins" : sunsetTimeMins,
+                            "formulaCoefficient" : givenSunAltitude / Math.sin(Math.PI * (givenTimeMins - sunriseTimeMins) / (sunsetTimeMins - sunriseTimeMins)) / 90
+                        },
+                        "moon" : {
+                            "givenAltitude" : givenMoonAltitude,
+                            "riseTimeMins" : moonriseTimeMins,
+                            "setTimeMins" : moonsetTimeMins,
+                            "formulaCoefficient" : givenMoonAltitude / Math.sin(Math.PI * (givenTimeMins - moonriseTimeMins) / (moonsetTimeMins - moonriseTimeMins)) / 90
+                        }
                     }
 
                     localStorage.setItem("data", JSON.stringify(formattedJSONData));
