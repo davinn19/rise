@@ -150,7 +150,7 @@ function loadAstronomyData() {
         fetch("https://craigchamberlain.github.io/moon-data/api/new-moon-data/" +  + "/")
         .then((response) => response.json())
         .then((responseJSON) => {
-            localStorage.setItem()
+            // TODO implement
 
         });
     }
@@ -215,7 +215,7 @@ function updateBackground() {
         );
         moon.setAttribute(
             "transform",
-            "translate(" + moonX + "," + formatCelestialAltitude(getMoonAltitude()) + ")"
+            "translate(" + moonX + "," + formatCelestialAltitude(getMoonAltitude()) + ") rotate(20)"
         );
     }
 
