@@ -1,14 +1,11 @@
 // Presets for sky color
 const nightColor = "#070B34";
-const sunriseColor = "#7b95b6";
-const dayColor = "#87ceeb";
-const sunsetColor = "#FB9062";
-const sunriseGradient = getColorGradient([nightColor, sunriseColor, dayColor], 60); // starts at 6:31 am - ends at 7:30 am
-const sunsetGradient = getColorGradient([dayColor, sunsetColor, nightColor], 60); // starts at 7:31 pm - ends at 8:30 pm
-const sunriseStart = 6 * 60 + 31; // 6:31 AM
-const sunriseEnd = 7 * 60 + 30; // 7:30 AM
-const sunsetStart = (12 + 6) * 60 + 31; // 6:31 PM
-const sunsetEnd = (12 + 7) * 60 + 30; // 7:30 PM
+const twilight1Color = "#18404e";
+const twilight2Color = "#316577";
+const twilight3Color = "#63b4cf";
+const dayColor = "#b1dae7";
+const sunriseGradient = getColorGradient([nightColor, twilight1Color, twilight2Color, twilight3Color, dayColor], 88);
+const sunsetGradient = getColorGradient([dayColor, twilight3Color, twilight2Color, twilight1Color, nightColor], 88);
 let minutesPastMidnight = 0;
 
 // variables for calculating sun/moon altitude
@@ -170,12 +167,19 @@ function updateBackground() {
     const sun = document.getElementById("sun");
     const moon = document.getElementById("moon");
 
-    const sunMoonX = 110;
-    const sunMoonPeak = 20;
-    const sunMoonHorizon = 70;
+    const sunX = 110;
+    const moonX = 30;
+    const celestialPeak = 10;
+    const celestialHorizon = 60;
     const date = new Date();
-    // const minutesPastMidnight = date.getHours() * 60 + date.getMinutes();
+    // minutesPastMidnight = date.getHours() * 60 + date.getMinutes();
 
+    const sunriseStart = jsonData.sun.riseTimeMins - 88;
+    const sunriseEnd = sunriseStart + 88;
+    const sunsetStart = jsonData.sun.setTimeMins;
+    const sunsetEnd = sunsetStart + 88;
+
+    // TODO use more accurate color gradients
     function updateSkyColor() {
         let skyColor;
         if (minutesPastMidnight > sunsetEnd || minutesPastMidnight < sunriseStart) {
