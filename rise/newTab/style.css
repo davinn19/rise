@@ -64,6 +64,10 @@ body,
     stroke-width: 0;
 }
 
+.celestial {
+    transition: transform 1s;
+}
+
 /* TEST */
 
 .slidecontainer {
