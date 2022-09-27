@@ -7,13 +7,14 @@ const dayColor = "#b1dae7";
 const sunriseGradient = getColorGradient([nightColor, twilight1Color, twilight2Color, twilight3Color, dayColor], 88);
 const sunsetGradient = getColorGradient([dayColor, twilight3Color, twilight2Color, twilight1Color, nightColor], 88);
 let minutesPastMidnight = 0;
+let currentDate;
+let oldMinutes = -1;
 
 // variables for calculating sun/moon altitude
 let jsonData;
 
 window.onload = function () {
-    updateClock();
-    updateGreeting();
+    updateTime();
 
     loadAstronomyData();
     updateBackground();
@@ -26,10 +27,22 @@ window.onload = function () {
     }
 };
 
+function updateTime() {
+    currentDate = new Date();
+    const minutes = currentDate.getMinutes();
+    if (minutes != oldMinutes) {
+        oldMinutes = minutes;
+        minutesPastMidnight = currentDate.getHours() * 60 + currentDate.getMinutes();
+
+        updateClock();
+        updateGreeting();
+        updateBackground();
+    }
+}
+
 function updateClock() {
-    const date = new Date();
-    let hour = date.getHours();
-    const minute = date.getMinutes();
+    let hour = currentDate.getHours();
+    const minute = currentDate.getMinutes();
 
     let timeSuffix;
     if (hour < 12) {
@@ -56,7 +69,7 @@ function updateClock() {
 }
 
 function updateGreeting() {
-    const hour = new Date().getHours();
+    const hour = currentDate.getHours();
     let greeting;
 
     if (hour >= 22 || hour < 4) {
@@ -71,22 +84,19 @@ function updateGreeting() {
     document.getElementById("greeting").textContent = "Good " + greeting + ".";
 }
 
-setInterval(updateClock, 10);
-setInterval(updateBackground, 10);
-setInterval(updateGreeting, 10000);
+setInterval(updateTime, 10);
 
 function loadAstronomyData() {
     function getDateString() {
-        const today = new Date();
         const dateString =
-            today.getFullYear() +
+            currentDate.getFullYear() +
             "-" +
-            (today.getMonth() + 1).toLocaleString("en-US", {
+            (currentDate.getMonth() + 1).toLocaleString("en-US", {
                 minimumIntegerDigits: 2,
                 useGrouping: false,
             }) +
             "-" +
-            today.getDate().toLocaleString("en-US", {
+            currentDate.getDate().toLocaleString("en-US", {
                 minimumIntegerDigits: 2,
                 useGrouping: false,
             });
@@ -146,7 +156,7 @@ function loadAstronomyData() {
                 });
         });
 
-        const currentYear = new Date().getFullYear();
+        const currentYear = currentDate.getFullYear();
         fetch("https://craigchamberlain.github.io/moon-data/api/new-moon-data/" +  + "/")
         .then((response) => response.json())
         .then((responseJSON) => {
@@ -179,8 +189,6 @@ function updateBackground() {
     const moonX = 30;
     const celestialPeak = 10;
     const celestialHorizon = 60;
-    const date = new Date();
-    // minutesPastMidnight = date.getHours() * 60 + date.getMinutes();
 
     const sunriseStart = jsonData.sun.riseTimeMins - 88;
     const sunriseEnd = sunriseStart + 88;
