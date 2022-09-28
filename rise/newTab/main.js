@@ -11,19 +11,21 @@ let currentDate;
 let oldMinutes = -1;
 
 // variables for calculating sun/moon altitude
-let jsonData;
+let data;
 
 window.onload = function () {
-    updateTime();
-
-    loadAstronomyData();
-    updateBackground();
+    Promise.all([fetchCelestialPositionAPIData(), fetchMoonPhaseAPIData()])
+        .then(() => {
+            updateTime();
+            // disable to change time with slider
+            // setInterval(updateTime, 10);
+            removeLoadingScreen();
+        })
 
     let slider = document.getElementById("myRange");
     // Update the current slider value (each time you drag the slider handle)
-    slider.oninput = function() {
+    slider.oninput = function () {
         minutesPastMidnight = this.value;
-        updateBackground();
     }
 };
 
@@ -33,11 +35,14 @@ function updateTime() {
     if (minutes != oldMinutes) {
         oldMinutes = minutes;
         minutesPastMidnight = currentDate.getHours() * 60 + currentDate.getMinutes();
-
-        updateClock();
-        updateGreeting();
-        updateBackground();
+        onTimeChanged();
     }
+}
+
+function onTimeChanged() {
+    updateClock();
+    updateGreeting();
+    updateBackground();
 }
 
 function updateClock() {
@@ -84,100 +89,109 @@ function updateGreeting() {
     document.getElementById("greeting").textContent = "Good " + greeting + ".";
 }
 
-setInterval(updateTime, 10);
+// TODO FIX START //
+function getDateString() {
+    const dateString =
+        currentDate.getFullYear() +
+        "-" +
+        (currentDate.getMonth() + 1).toLocaleString("en-US", {
+            minimumIntegerDigits: 2,
+            useGrouping: false,
+        }) +
+        "-" +
+        currentDate.getDate().toLocaleString("en-US", {
+            minimumIntegerDigits: 2,
+            useGrouping: false,
+        });
+    return dateString;
+}
 
-function loadAstronomyData() {
-    function getDateString() {
-        const dateString =
-            currentDate.getFullYear() +
-            "-" +
-            (currentDate.getMonth() + 1).toLocaleString("en-US", {
-                minimumIntegerDigits: 2,
-                useGrouping: false,
-            }) +
-            "-" +
-            currentDate.getDate().toLocaleString("en-US", {
-                minimumIntegerDigits: 2,
-                useGrouping: false,
-            });
-        return dateString;
-    }
+// convert hr:min:sec string to mins int, discarding seconds and ms
+function getMinsFromTimeString(timeString) {
+    let splitString = timeString.split(":");
+    return parseInt(splitString[0]) * 60 + parseInt(splitString[1]);
+}
 
-    // convert hr:min:sec string to mins int, discarding seconds and ms
-    function getMinsFromTimeString(timeString) {
-        let splitString = timeString.split(":");
-        return parseInt(splitString[0]) * 60 + parseInt(splitString[1]);
-    }
+function removeLoadingScreen() {
+    const loadingScreen = document.getElementById("loadingScreen");
+    loadingScreen.style.opacity = 0;
+    loadingScreen.addEventListener("transitionend", () => loadingScreen.remove());
+}
 
-    function removeLoadingScreen() {
-        const loadingScreen = document.getElementById("loadingScreen");
-        loadingScreen.style.opacity = 0;
-        loadingScreen.addEventListener("transitionend", () => loadingScreen.remove());
-    }
+// TODO do something proper with reject
+function fetchCelestialPositionAPIData() {
+    return new Promise((resolve, reject) => {
+        let data = JSON.parse(localStorage.getItem("celestialPositions"));
+        if (data == null || data.date != getDateString()) {
+            localStorage.removeItem("celestialPosition");
 
-    function fetchNewestAPIData() {
-        navigator.geolocation.getCurrentPosition((position) => {
-            fetch(
-                "https://api.ipgeolocation.io/astronomy?apiKey=b599741103fc4cccae8e98313394a59b&lat=" +
+            navigator.geolocation.getCurrentPosition((position) => {
+                fetch(
+                    "https://api.ipgeolocation.io/astronomy?apiKey=b599741103fc4cccae8e98313394a59b&lat=" +
                     position.coords.latitude +
                     "&long=" +
                     position.coords.longitude
-            )
-                .then((response) => response.json())
-                .then((responseJSON) => {
-                    const givenTimeMins = getMinsFromTimeString(responseJSON.current_time);
-                    const givenSunAltitude = responseJSON.sun_altitude;
-                    const sunriseTimeMins = getMinsFromTimeString(responseJSON.sunrise);
-                    const sunsetTimeMins = getMinsFromTimeString(responseJSON.sunset);
-                    const givenMoonAltitude = responseJSON.moon_altitude;
-                    const moonriseTimeMins = getMinsFromTimeString(responseJSON.moonrise);
-                    const moonsetTimeMins = getMinsFromTimeString(responseJSON.moonset);
+                )
+                    .then((response) => response.json())
+                    .then((responseJSON) => {
+                        const givenTimeMins = getMinsFromTimeString(responseJSON.current_time);
+                        const givenSunAltitude = responseJSON.sun_altitude;
+                        const sunriseTimeMins = getMinsFromTimeString(responseJSON.sunrise);
+                        const sunsetTimeMins = getMinsFromTimeString(responseJSON.sunset);
+                        const givenMoonAltitude = responseJSON.moon_altitude;
+                        const moonriseTimeMins = getMinsFromTimeString(responseJSON.moonrise);
+                        const moonsetTimeMins = getMinsFromTimeString(responseJSON.moonset);
 
-                    const formattedJSONData = {
-                        "date" : getDateString(),
-                        "givenTimeMins" : givenTimeMins,
-                        "sun" : {
-                            "givenAltitude" : givenSunAltitude,
-                            "riseTimeMins" : sunriseTimeMins,
-                            "setTimeMins" : sunsetTimeMins,
-                            "formulaCoefficient" : givenSunAltitude / Math.sin(Math.PI * (givenTimeMins - sunriseTimeMins) / (sunsetTimeMins - sunriseTimeMins)) / 90
-                        },
-                        "moon" : {
-                            "givenAltitude" : givenMoonAltitude,
-                            "riseTimeMins" : moonriseTimeMins,
-                            "setTimeMins" : moonsetTimeMins,
-                            "formulaCoefficient" : givenMoonAltitude / Math.sin(Math.PI * (givenTimeMins - moonriseTimeMins) / (moonsetTimeMins - moonriseTimeMins)) / 90
+                        const formattedJSONData = {
+                            "date": getDateString(),
+                            "givenTimeMins": givenTimeMins,
+                            "sun": {
+                                "givenAltitude": givenSunAltitude,
+                                "riseTimeMins": sunriseTimeMins,
+                                "setTimeMins": sunsetTimeMins,
+                                "formulaCoefficient": givenSunAltitude / Math.sin(Math.PI * (givenTimeMins - sunriseTimeMins) / (sunsetTimeMins - sunriseTimeMins)) / 90
+                            },
+                            "moon": {
+                                "givenAltitude": givenMoonAltitude,
+                                "riseTimeMins": moonriseTimeMins,
+                                "setTimeMins": moonsetTimeMins,
+                                "formulaCoefficient": givenMoonAltitude / Math.sin(Math.PI * (givenTimeMins - moonriseTimeMins) / (moonsetTimeMins - moonriseTimeMins)) / 90
+                            }
                         }
-                    }
 
-                    localStorage.setItem("data", JSON.stringify(formattedJSONData));
-                    removeLoadingScreen();
-                    return responseJSON;
-                });
-        });
+                        localStorage.setItem("celestialPositions", JSON.stringify(formattedJSONData));
+                        data = formattedJSONData;
+                    });
+            });
+        }
 
-        const currentYear = currentDate.getFullYear();
-        fetch("https://craigchamberlain.github.io/moon-data/api/new-moon-data/" +  + "/")
-        .then((response) => response.json())
-        .then((responseJSON) => {
-            // TODO implement
-
-        });
-    }
-
-    jsonData = JSON.parse(localStorage.getItem("data"));
-
-    if (jsonData == null || jsonData.date != getDateString()) {
-        jsonData = null;
-        localStorage.clear();
-        jsonData = fetchNewestAPIData();
-    } else {
-        removeLoadingScreen();
-    }
+        resolve(data);
+        reject("idk you're on your own");
+    });
 }
 
+function fetchMoonPhaseAPIData() {
+    return new Promise((resolve, reject) => {
+        const currentYear = currentDate.getFullYear();
+        let data = localStorage.getItem("moonPhases");
+        if (data == null || data.year != currentYear()) {
+            localStorage.removeItem("moonPhases");
+            fetch("https://craigchamberlain.github.io/moon-data/api/new-moon-data/" + currentYear + "/")
+                .then((response) => response.json())
+                .then((responseJSON) => {
+                    // TODO implement
+
+
+                });
+
+        });
+
+        resolve(data);
+}
+// TODO FIX END //
+
 function updateBackground() {
-    if (jsonData == null) {
+    if (data == null) {
         console.log("No json data loaded.");
         return;
     }
@@ -190,9 +204,9 @@ function updateBackground() {
     const celestialPeak = 10;
     const celestialHorizon = 60;
 
-    const sunriseStart = jsonData.sun.riseTimeMins - 88;
+    const sunriseStart = data.sun.riseTimeMins - 88;
     const sunriseEnd = sunriseStart + 88;
-    const sunsetStart = jsonData.sun.setTimeMins;
+    const sunsetStart = data.sun.setTimeMins;
     const sunsetEnd = sunsetStart + 88;
 
     function updateSkyColor() {
@@ -230,11 +244,10 @@ function updateBackground() {
     function updateNightCelestialTransparency() {
         // if sun altitude is > 0, night celestials are invisible
         // if sun altitude is < -10, transition opacity
-        
+
         const nightCelestials = document.getElementsByClassName("nightCelestial");
         let opacity;
         const sunAlitutde = getSunAltitude() * 90;
-        console.log(sunAlitutde);
         if (sunAlitutde > 0) {
             opacity = 0;
         }
@@ -256,11 +269,11 @@ function updateBackground() {
     }
 
     function getSunAltitude() {
-        return getCelestialAltitude(jsonData.sun);
+        return getCelestialAltitude(data.sun);
     }
 
     function getMoonAltitude() {
-        return getCelestialAltitude(jsonData.moon);
+        return getCelestialAltitude(data.moon);
     }
 
     // TODO normalize celestial altitude across entire program
@@ -293,10 +306,10 @@ function hexToRgb(hex) {
     let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
         ? {
-              r: parseInt(result[1], 16),
-              g: parseInt(result[2], 16),
-              b: parseInt(result[3], 16),
-          }
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16),
+        }
         : null;
 }
 
