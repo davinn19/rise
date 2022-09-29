@@ -7,26 +7,37 @@ const dayColor = "#b1dae7";
 const sunriseGradient = getColorGradient([nightColor, twilight1Color, twilight2Color, twilight3Color, dayColor], 88);
 const sunsetGradient = getColorGradient([dayColor, twilight3Color, twilight2Color, twilight1Color, nightColor], 88);
 let minutesPastMidnight = 0;
-let currentDate;
+let currentDate = new Date();
 let oldMinutes = -1;
 
-// variables for calculating sun/moon altitude
-let data;
+// Set to true to debug with slider
+let sliderEnabled = true;
 
-window.onload = function () {
-    Promise.all([fetchCelestialPositionAPIData(), fetchMoonPhaseAPIData()])
-        .then(() => {
-            updateTime();
-            // disable to change time with slider
-            // setInterval(updateTime, 10);
-            removeLoadingScreen();
-        })
+// variables for fetched data
+let celestialPositionData;
+let moonPhaseData;
 
-    let slider = document.getElementById("myRange");
-    // Update the current slider value (each time you drag the slider handle)
-    slider.oninput = function () {
-        minutesPastMidnight = this.value;
+window.onload = async function() {
+    const fetchedData = await Promise.all([fetchCelestialPositionAPIData(), fetchMoonPhaseAPIData()]);
+    console.log(fetchedData);
+
+    celestialPositionData = fetchedData[0];
+    moonPhaseData = fetchedData[1];
+    updateTime();
+
+    if (sliderEnabled) {
+        let slider = document.getElementById("myRange");
+        slider.oninput = function () {
+            // TODO standardize usage of minutesPastMidnight OR currentDate (leaning towards minutesPastMidnight)
+            minutesPastMidnight = this.value;
+            onTimeChanged();
+        }
     }
+    else {
+        setInterval(updateTime, 10);
+    }
+
+    removeLoadingScreen();
 };
 
 function updateTime() {
@@ -118,80 +129,96 @@ function removeLoadingScreen() {
     loadingScreen.addEventListener("transitionend", () => loadingScreen.remove());
 }
 
-// TODO do something proper with reject
+function getCoordinates() {
+    return new Promise((resolve,reject) => {
+        try {
+            navigator.geolocation.getCurrentPosition((position) => resolve(position.coords));
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+// TODO try to condense fetching into one function
 function fetchCelestialPositionAPIData() {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+
         let data = JSON.parse(localStorage.getItem("celestialPositions"));
+
         if (data == null || data.date != getDateString()) {
             localStorage.removeItem("celestialPosition");
 
-            navigator.geolocation.getCurrentPosition((position) => {
-                fetch(
-                    "https://api.ipgeolocation.io/astronomy?apiKey=b599741103fc4cccae8e98313394a59b&lat=" +
-                    position.coords.latitude +
-                    "&long=" +
-                    position.coords.longitude
-                )
-                    .then((response) => response.json())
-                    .then((responseJSON) => {
-                        const givenTimeMins = getMinsFromTimeString(responseJSON.current_time);
-                        const givenSunAltitude = responseJSON.sun_altitude;
-                        const sunriseTimeMins = getMinsFromTimeString(responseJSON.sunrise);
-                        const sunsetTimeMins = getMinsFromTimeString(responseJSON.sunset);
-                        const givenMoonAltitude = responseJSON.moon_altitude;
-                        const moonriseTimeMins = getMinsFromTimeString(responseJSON.moonrise);
-                        const moonsetTimeMins = getMinsFromTimeString(responseJSON.moonset);
-
-                        const formattedJSONData = {
-                            "date": getDateString(),
-                            "givenTimeMins": givenTimeMins,
-                            "sun": {
-                                "givenAltitude": givenSunAltitude,
-                                "riseTimeMins": sunriseTimeMins,
-                                "setTimeMins": sunsetTimeMins,
-                                "formulaCoefficient": givenSunAltitude / Math.sin(Math.PI * (givenTimeMins - sunriseTimeMins) / (sunsetTimeMins - sunriseTimeMins)) / 90
-                            },
-                            "moon": {
-                                "givenAltitude": givenMoonAltitude,
-                                "riseTimeMins": moonriseTimeMins,
-                                "setTimeMins": moonsetTimeMins,
-                                "formulaCoefficient": givenMoonAltitude / Math.sin(Math.PI * (givenTimeMins - moonriseTimeMins) / (moonsetTimeMins - moonriseTimeMins)) / 90
-                            }
-                        }
-
-                        localStorage.setItem("celestialPositions", JSON.stringify(formattedJSONData));
-                        data = formattedJSONData;
-                    });
-            });
+            try {
+                const coords = await getCoordinates();
+                const response = await fetch("https://api.ipgeolocation.io/astronomy?apiKey=b599741103fc4cccae8e98313394a59b&lat=" + coords.latitude + "&long=" + coords.longitude);
+                const responseJSON = await response.json();
+                
+                const givenTimeMins = getMinsFromTimeString(responseJSON.current_time);
+                const givenSunAltitude = responseJSON.sun_altitude;
+                const sunriseTimeMins = getMinsFromTimeString(responseJSON.sunrise);
+                const sunsetTimeMins = getMinsFromTimeString(responseJSON.sunset);
+                const givenMoonAltitude = responseJSON.moon_altitude;
+                const moonriseTimeMins = getMinsFromTimeString(responseJSON.moonrise);
+                const moonsetTimeMins = getMinsFromTimeString(responseJSON.moonset);
+    
+                const formattedJSONData = {
+                    "date": getDateString(),
+                    "givenTimeMins": givenTimeMins,
+                    "sun": {
+                        "givenAltitude": givenSunAltitude,
+                        "riseTimeMins": sunriseTimeMins,
+                        "setTimeMins": sunsetTimeMins,
+                        "formulaCoefficient": givenSunAltitude / Math.sin(Math.PI * (givenTimeMins - sunriseTimeMins) / (sunsetTimeMins - sunriseTimeMins)) / 90
+                    },
+                    "moon": {
+                        "givenAltitude": givenMoonAltitude,
+                        "riseTimeMins": moonriseTimeMins,
+                        "setTimeMins": moonsetTimeMins,
+                        "formulaCoefficient": givenMoonAltitude / Math.sin(Math.PI * (givenTimeMins - moonriseTimeMins) / (moonsetTimeMins - moonriseTimeMins)) / 90
+                    }
+                }
+    
+                localStorage.setItem("celestialPositions", JSON.stringify(formattedJSONData));
+                data = formattedJSONData;
+            } catch (error) {
+                reject(error);
+            }
+            
         }
 
         resolve(data);
-        reject("idk you're on your own");
     });
 }
 
 function fetchMoonPhaseAPIData() {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         const currentYear = currentDate.getFullYear();
         let data = localStorage.getItem("moonPhases");
         if (data == null || data.year != currentYear()) {
+
             localStorage.removeItem("moonPhases");
-            fetch("https://craigchamberlain.github.io/moon-data/api/new-moon-data/" + currentYear + "/")
-                .then((response) => response.json())
-                .then((responseJSON) => {
-                    // TODO implement
 
+            try {
+                const response = await fetch("https://craigchamberlain.github.io/moon-data/api/new-moon-data/" + currentYear + "/");
+                const responseJSON = await response.json();
+                
+                data = {}
+    
+                // TODO implement parsing of data
 
-                });
-
-        });
+            } catch (error) {
+                reject(error);
+            }
+        }
 
         resolve(data);
+    });
 }
+
 // TODO FIX END //
 
 function updateBackground() {
-    if (data == null) {
+    if (celestialPositionData == null) {
         console.log("No json data loaded.");
         return;
     }
@@ -204,9 +231,9 @@ function updateBackground() {
     const celestialPeak = 10;
     const celestialHorizon = 60;
 
-    const sunriseStart = data.sun.riseTimeMins - 88;
+    const sunriseStart = celestialPositionData.sun.riseTimeMins - 88;
     const sunriseEnd = sunriseStart + 88;
-    const sunsetStart = data.sun.setTimeMins;
+    const sunsetStart = celestialPositionData.sun.setTimeMins;
     const sunsetEnd = sunsetStart + 88;
 
     function updateSkyColor() {
@@ -269,11 +296,11 @@ function updateBackground() {
     }
 
     function getSunAltitude() {
-        return getCelestialAltitude(data.sun);
+        return getCelestialAltitude(celestialPositionData.sun);
     }
 
     function getMoonAltitude() {
-        return getCelestialAltitude(data.moon);
+        return getCelestialAltitude(celestialPositionData.moon);
     }
 
     // TODO normalize celestial altitude across entire program
