@@ -314,6 +314,31 @@ function updateBackground() {
 
     function updateMoonPhase() {
         // TODO implement
+        const negativeMoon = document.getElementById("moonNegative");
+        const negativeRadius = Number.parseFloat(negativeMoon.getAttribute("r"));
+        const moonRadius = Number.parseFloat(document.getElementById("moonObject").getAttribute("r"));
+        const fullMoonPosition = negativeRadius + moonRadius;
+
+        negativeMoon.setAttribute("cx", getNegativeMoonPosition());
+
+        function getNegativeMoonPosition() {
+            const currentDateMS = currentDate.getTime();
+            let prevNewMoonDateMS = Date.parse(newMoonsData[0]);
+
+            newMoonsData.forEach((newMoonData) => {
+
+                const currentNewMoonDateMS = Date.parse(newMoonData);
+
+                if (currentDateMS > currentNewMoonDateMS) {
+                    prevNewMoonDateMS = currentNewMoonDateMS;
+                } else {
+                    // TODO use a similar formula as the celestial altitude one
+                } 
+            });
+
+            console.error("Something went wrong with finding the moon phase, returning -5 by default");
+            return -5;
+        }
     }
 
     function getSunAltitude() {
@@ -338,6 +363,7 @@ function updateBackground() {
     updateSkyColor();
     updateCelestialPosition();
     updateNightCelestialTransparency();
+    updateMoonPhase();
 }
 
 // COLOR GRADIENT STUFF //
