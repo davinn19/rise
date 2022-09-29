@@ -15,14 +15,13 @@ let sliderEnabled = true;
 
 // variables for fetched data
 let celestialPositionData;
-let moonPhaseData;
+let newMoonsData;
 
 window.onload = async function() {
     const fetchedData = await Promise.all([fetchCelestialPositionAPIData(), fetchMoonPhaseAPIData()]);
-    console.log(fetchedData);
 
     celestialPositionData = fetchedData[0];
-    moonPhaseData = fetchedData[1];
+    newMoonsData = fetchedData[1];
     updateTime();
 
     if (sliderEnabled) {
@@ -197,7 +196,7 @@ function fetchCelestialPositionAPIData() {
             } catch (error) {
                 reject(error);
             }
-            
+
         }
 
         resolve(data);
@@ -207,18 +206,40 @@ function fetchCelestialPositionAPIData() {
 function fetchMoonPhaseAPIData() {
     return new Promise(async (resolve, reject) => {
         const currentYear = currentDate.getFullYear();
-        let data = localStorage.getItem("moonPhases");
-        if (data == null || data.year != currentYear()) {
+        let data = JSON.parse(localStorage.getItem("newMoons"));
+        if (data == null || data.year != currentYear) {
 
-            localStorage.removeItem("moonPhases");
+            localStorage.removeItem("newMoons");
 
             try {
-                const response = await fetch("https://craigchamberlain.github.io/moon-data/api/new-moon-data/" + currentYear + "/");
-                const responseJSON = await response.json();
+                const responses = await Promise.all([fetch("https://craigchamberlain.github.io/moon-data/api/new-moon-data/" + (currentYear - 1) + "/"), fetch("https://craigchamberlain.github.io/moon-data/api/new-moon-data/" + currentYear + "/"), fetch("https://craigchamberlain.github.io/moon-data/api/new-moon-data/" + (currentYear + 1) + "/")]);
                 
-                data = {}
-    
-                // TODO implement parsing of data
+                const lastYearJSON = await responses[0].json();
+                const currentYearJSON = await responses[1].json();
+                const nextYearJSON = await responses[2].json();
+
+                console.log(lastYearJSON, currentYearJSON, nextYearJSON);
+                
+                data = {
+                    "year" : currentYear,
+                    "dates" : []
+                }
+                
+                function parseNewMoonJSON(jsonData) {
+                    jsonData.forEach((newMoonDateString) => {
+                        const newMoonDate = new Date();
+                        newMoonDate.setTime(Date.parse(newMoonDateString));
+                        
+                        
+                        data.dates.push({"month" : newMoonDate.getMonth(), "day" : newMoonDate.getDate()})
+                    });
+                }
+
+                parseNewMoonJSON(lastYearJSON);
+                parseNewMoonJSON(currentYearJSON);
+                parseNewMoonJSON(nextYearJSON);
+
+                localStorage.setItem("newMoons", JSON.stringify(data));
 
             } catch (error) {
                 reject(error);
