@@ -222,22 +222,8 @@ function fetchMoonPhaseAPIData() {
                 
                 data = {
                     "year" : currentYear,
-                    "dates" : []
+                    "dates" : lastYearJSON.concat(currentYearJSON).concat(nextYearJSON)
                 }
-                
-                function parseNewMoonJSON(jsonData) {
-                    jsonData.forEach((newMoonDateString) => {
-                        const newMoonDate = new Date();
-                        newMoonDate.setTime(Date.parse(newMoonDateString));
-                        
-                        
-                        data.dates.push({"month" : newMoonDate.getMonth(), "day" : newMoonDate.getDate()})
-                    });
-                }
-
-                parseNewMoonJSON(lastYearJSON);
-                parseNewMoonJSON(currentYearJSON);
-                parseNewMoonJSON(nextYearJSON);
 
                 localStorage.setItem("newMoons", JSON.stringify(data));
 
