@@ -37,6 +37,20 @@ window.onload = async function() {
         setInterval(updateTime, 10);
     }
 
+    const starGroup = document.getElementById("stars");
+    for (let i = 0; i < 250; i++) {
+        const newStar = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        newStar.setAttribute("class","star");
+        const starSize = Math.random() / 2 + 0.25;
+        newStar.setAttribute("width", starSize + "");
+        newStar.setAttribute("height", starSize + "");
+        newStar.setAttribute("x", Math.random() * 160 + "");
+        newStar.setAttribute("y", Math.random () * 90 + "");
+        newStar.setAttribute("transform","rotate(" + Math.random() * 90 + ")");
+
+        starGroup.appendChild(newStar);
+    }
+
     removeLoadingScreen();
 };
 
