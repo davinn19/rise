@@ -68,6 +68,10 @@ body,
     transition: transform 1s;
 }
 
+.star {
+    fill: antiquewhite;
+}
+
 /* TEST */
 
 .slidecontainer {
