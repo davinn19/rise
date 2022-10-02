@@ -21,7 +21,7 @@ window.onload = async function() {
     const fetchedData = await Promise.all([fetchCelestialPositionAPIData(), fetchMoonPhaseAPIData()]);
 
     celestialPositionData = fetchedData[0];
-    newMoonsData = fetchedData[1];
+    newMoonsData = fetchedData[1].dates;
     updateTime();
 
     if (sliderEnabled) {
@@ -29,6 +29,11 @@ window.onload = async function() {
         slider.oninput = function () {
             // TODO standardize usage of minutesPastMidnight OR currentDate (leaning towards minutesPastMidnight)
             minutesPastMidnight = this.value;
+            currentDate.setHours(Math.floor(minutesPastMidnight / 60));
+            currentDate.setMinutes(minutesPastMidnight % 60);
+            currentDate.setSeconds(0);
+            currentDate.setMilliseconds(0);
+
             onTimeChanged();
         }
     }
@@ -101,7 +106,7 @@ function updateGreeting() {
     const hour = currentDate.getHours();
     let greeting;
 
-    if (hour >= 22 || hour < 4) {
+    if (hour >= 22 || hour < 5) {
         greeting = "night";
     } else if (hour >= 18) {
         greeting = "evening";
@@ -113,7 +118,6 @@ function updateGreeting() {
     document.getElementById("greeting").textContent = "Good " + greeting + ".";
 }
 
-// TODO FIX START //
 function getDateString() {
     const dateString =
         currentDate.getFullYear() +
@@ -152,7 +156,6 @@ function getCoordinates() {
     });
 }
 
-// TODO try to condense fetching into one function
 function fetchCelestialPositionAPIData() {
     return new Promise(async (resolve, reject) => {
 
@@ -236,8 +239,6 @@ function fetchMoonPhaseAPIData() {
     });
 }
 
-// TODO FIX END //
-
 function updateBackground() {
     if (celestialPositionData == null) {
         console.log("No json data loaded.");
@@ -313,29 +314,28 @@ function updateBackground() {
     }
 
     function updateMoonPhase() {
-        // TODO implement
         const negativeMoon = document.getElementById("moonNegative");
         const negativeRadius = Number.parseFloat(negativeMoon.getAttribute("r"));
         const moonRadius = Number.parseFloat(document.getElementById("moonObject").getAttribute("r"));
-        const fullMoonPosition = negativeRadius + moonRadius;
+        const negativeMoonDefaultPosition = negativeRadius + moonRadius;
 
         negativeMoon.setAttribute("cx", getNegativeMoonPosition());
 
         function getNegativeMoonPosition() {
             const currentDateMS = currentDate.getTime();
-            let prevNewMoonDateMS = Date.parse(newMoonsData[0]);
+            let prevNewMoonDateMS = Date.parse(newMoonsData[0]);  
 
-            newMoonsData.forEach((newMoonData) => {
-
-                const currentNewMoonDateMS = Date.parse(newMoonData);
-
-                if (currentDateMS > currentNewMoonDateMS) {
-                    prevNewMoonDateMS = currentNewMoonDateMS;
+            for (let i = 1; i < newMoonsData.length; i++) {
+                const nextNewMoonDateMS = Date.parse(newMoonsData[i]);
+                if (currentDateMS > nextNewMoonDateMS) {
+                    prevNewMoonDateMS = nextNewMoonDateMS;
                 } else {
-                    // TODO use a similar formula as the celestial altitude one
+                    // TODO implement wave formula instead of linear, explain formula
+                    return -negativeMoonDefaultPosition + 2 * negativeMoonDefaultPosition * (currentDateMS - prevNewMoonDateMS) / (nextNewMoonDateMS - prevNewMoonDateMS);
                 } 
-            });
+            }
 
+            // should never go past this line
             console.error("Something went wrong with finding the moon phase, returning -5 by default");
             return -5;
         }
