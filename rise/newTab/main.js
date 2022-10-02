@@ -1,11 +1,20 @@
 // Presets for sky color
-const nightColor = "#070B34";
-const twilight1Color = "#18404e";
-const twilight2Color = "#316577";
-const twilight3Color = "#63b4cf";
-const dayColor = "#b1dae7";
-const sunriseGradient = getColorGradient([nightColor, twilight1Color, twilight2Color, twilight3Color, dayColor], 88);
-const sunsetGradient = getColorGradient([dayColor, twilight3Color, twilight2Color, twilight1Color, nightColor], 88);
+const skyNightColor = "#070B34";
+const skyTwilight1Color = "#18404e";
+const skyTwilight2Color = "#316577";
+const skyTwilight3Color = "#63b4cf";
+const skyDayColor = "#b1dae7";
+const sunriseGradient = getColorGradient([skyNightColor, skyTwilight1Color, skyTwilight2Color, skyTwilight3Color, skyDayColor], 88);
+const sunsetGradient = getColorGradient([skyDayColor, skyTwilight3Color, skyTwilight2Color, skyTwilight1Color, skyNightColor], 88);
+
+// Presets for mountain colors
+const mountainRightNightColor = "#6b2390";
+const mountainLeftNightColor = "#6918b4";
+const mountainRightDayColor = "#2c93cc";
+const mountainLeftDayColor = "#296fb0";
+const mountainRightGradient = getColorGradient([mountainRightNightColor, mountainRightDayColor], 100);
+const mountainLeftGradient = getColorGradient([mountainLeftNightColor, mountainLeftDayColor], 100);
+
 let minutesPastMidnight = 0;
 let currentDate = new Date();
 let oldMinutes = -1;
@@ -261,13 +270,13 @@ function updateBackground() {
     function updateSkyColor() {
         let skyColor;
         if (minutesPastMidnight > sunsetEnd || minutesPastMidnight < sunriseStart) {
-            skyColor = nightColor;
+            skyColor = skyNightColor;
         } else if (minutesPastMidnight >= sunsetStart) {
             // find sunset gradient
             const minutesPastSunset = minutesPastMidnight - sunsetStart;
             skyColor = sunsetGradient[minutesPastSunset];
         } else if (minutesPastMidnight > sunriseEnd) {
-            skyColor = dayColor;
+            skyColor = skyDayColor;
         } else {
             // find sunrise gradient
             const minutesPastSunrise = minutesPastMidnight - sunriseStart;
@@ -295,17 +304,7 @@ function updateBackground() {
         // if sun altitude is < -10, transition opacity
 
         const nightCelestials = document.getElementsByClassName("nightCelestial");
-        let opacity;
-        const sunAlitutde = getSunAltitude() * 90;
-        if (sunAlitutde > 0) {
-            opacity = 0;
-        }
-        else if (sunAlitutde < -10) {
-            opacity = 1;
-        }
-        else {
-            opacity = -sunAlitutde / 10;
-        }
+        const opacity = 1 - getSunBrightnessFactor();
 
         for (let i = 0; i < nightCelestials.length; i++) {
             const nightCelestial = nightCelestials[i];
@@ -341,6 +340,29 @@ function updateBackground() {
         }
     }
 
+    function updateStarRotation() {
+        // TODO implement
+    }
+
+    function updateMountainColors() {
+        // TODO implement
+        const mountainRights = document.getElementsByClassName("mountainRight");
+        const mountainLefts = document.getElementsByClassName("mountainLeft");
+
+        const colorIndex = Math.floor((mountainLeftGradient.length - 1) * getSunBrightnessFactor());
+        console.log(colorIndex)
+
+        for (let i = 0; i < mountainRights.length; i++) {
+            const mountainRight = mountainRights[i];
+            mountainRight.setAttribute("style","fill:" + mountainRightGradient[colorIndex]);
+        }
+
+        for (let i = 0; i < mountainRights.length; i++) {
+            const mountainLeft = mountainLefts[i];
+            mountainLeft.setAttribute("style","fill:" + mountainLeftGradient[colorIndex]);
+        }
+    }
+
     function getSunAltitude() {
         return getCelestialAltitude(celestialPositionData.sun);
     }
@@ -349,7 +371,6 @@ function updateBackground() {
         return getCelestialAltitude(celestialPositionData.moon);
     }
 
-    // TODO normalize celestial altitude across entire program
     function getCelestialAltitude(celestialJSON) {
         // TODO have some proper documentation explaining the formula
         return celestialJSON.formulaCoefficient * Math.sin(Math.PI * (minutesPastMidnight - celestialJSON.riseTimeMins) / (celestialJSON.setTimeMins - celestialJSON.riseTimeMins));
@@ -360,10 +381,28 @@ function updateBackground() {
         return -1 * (celestialHorizon - celestialPeak) * altitude + celestialHorizon;
     }
 
+    // Used to set opacity of night objects and color of mountain
+    function getSunBrightnessFactor() {
+        const sunAlitutde = getSunAltitude() * 90;
+        let brightnessFactor;
+        if (sunAlitutde > 0) {
+            brightnessFactor = 1;
+        }
+        else if (sunAlitutde < -10) {
+            brightnessFactor = 0;
+        }
+        else {
+            brightnessFactor = (sunAlitutde + 10) / 10;
+        }
+        return brightnessFactor;
+    }
+
     updateSkyColor();
     updateCelestialPosition();
     updateNightCelestialTransparency();
     updateMoonPhase();
+    updateStarRotation();
+    updateMountainColors();
 }
 
 // COLOR GRADIENT STUFF //
