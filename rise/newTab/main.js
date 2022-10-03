@@ -51,14 +51,14 @@ window.onload = async function() {
     }
 
     const starGroup = document.getElementById("stars");
-    for (let i = 0; i < 250; i++) {
+    for (let i = 0; i < 500; i++) {
         const newStar = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         newStar.setAttribute("class","star");
         const starSize = Math.random() / 2 + 0.25;
         newStar.setAttribute("width", starSize + "");
         newStar.setAttribute("height", starSize + "");
-        newStar.setAttribute("x", Math.random() * 160 + "");
-        newStar.setAttribute("y", Math.random () * 90 + "");
+        newStar.setAttribute("x", Math.random() * 320 - 160 + "");
+        newStar.setAttribute("y", Math.random () * 180 - 90 + "");
         newStar.setAttribute("transform","rotate(" + Math.random() * 90 + ")");
 
         starGroup.appendChild(newStar);
@@ -365,11 +365,11 @@ function updateBackground() {
     }
 
     function updateStarRotation() {
-        // TODO implement
+        const stars = document.getElementById("stars");
+        stars.setAttribute("transform", "translate(80,60) rotate(" + (360 * ((1400 - minutesPastMidnight) / 1400)) + ")");
     }
 
     function updateMountainColors() {
-        // TODO implement
         const mountainRights = document.getElementsByClassName("mountainRight");
         const mountainLefts = document.getElementsByClassName("mountainLeft");
 
