@@ -127,16 +127,16 @@ function updateGreeting() {
     document.getElementById("greeting").textContent = "Good " + greeting + ".";
 }
 
-function getDateString() {
+function getDateString(date) {
     const dateString =
-        currentDate.getFullYear() +
+    date.getFullYear() +
         "-" +
-        (currentDate.getMonth() + 1).toLocaleString("en-US", {
+        (date.getMonth() + 1).toLocaleString("en-US", {
             minimumIntegerDigits: 2,
             useGrouping: false,
         }) +
         "-" +
-        currentDate.getDate().toLocaleString("en-US", {
+        date.getDate().toLocaleString("en-US", {
             minimumIntegerDigits: 2,
             useGrouping: false,
         });
@@ -166,12 +166,32 @@ function getCoordinates() {
 }
 
 function fetchCelestialPositionAPIData() {
+
+    // Gets moonrise/moonset of next day if current day doesn't have it
+    async function fetchNextMoonriseOrMoonset(willReturnMoonrise) {
+        return await new Promise(async(resolve, reject) => {
+            const coords = await getCoordinates();
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            const nextDayResponse = await fetch("https://api.ipgeolocation.io/astronomy?apiKey=b599741103fc4cccae8e98313394a59b&lat=" + coords.latitude + "&long=" + coords.longitude + "&date=" + getDateString(tomorrow));
+            const nextDayJSON = await nextDayResponse.json();
+
+            if (willReturnMoonrise) {
+                resolve(getMinsFromTimeString(nextDayJSON.moonrise) + 24 * 60);
+            } else {
+                resolve(getMinsFromTimeString(nextDayJSON.moonset) + 24 * 60);
+            }
+            reject("idk 3");
+        });
+    }
+
     return new Promise(async (resolve, reject) => {
 
         let data = JSON.parse(localStorage.getItem("celestialPositions"));
 
-        if (data == null || data.date != getDateString()) {
-            localStorage.removeItem("celestialPosition");
+        if (data == null || data.date != getDateString(currentDate)) {
+            localStorage.removeItem("celestialPositions");
 
             try {
                 const coords = await getCoordinates();
@@ -183,11 +203,18 @@ function fetchCelestialPositionAPIData() {
                 const sunriseTimeMins = getMinsFromTimeString(responseJSON.sunrise);
                 const sunsetTimeMins = getMinsFromTimeString(responseJSON.sunset);
                 const givenMoonAltitude = responseJSON.moon_altitude;
-                const moonriseTimeMins = getMinsFromTimeString(responseJSON.moonrise);
-                const moonsetTimeMins = getMinsFromTimeString(responseJSON.moonset);
+                let moonriseTimeMins = getMinsFromTimeString(responseJSON.moonrise);
+                let moonsetTimeMins = getMinsFromTimeString(responseJSON.moonset);
+
+                // Gets moonrise/moonset of next day if current day doesn't have it
+                if (isNaN(moonriseTimeMins)) {
+                    moonriseTimeMins = await fetchNextMoonriseOrMoonset(true);
+                } else if (isNaN(moonsetTimeMins)) {
+                    moonsetTimeMins = await fetchNextMoonriseOrMoonset(false);
+                }
     
                 const formattedJSONData = {
-                    "date": getDateString(),
+                    "date": getDateString(currentDate),
                     "givenTimeMins": givenTimeMins,
                     "sun": {
                         "givenAltitude": givenSunAltitude,
@@ -220,7 +247,6 @@ function fetchMoonPhaseAPIData() {
         const currentYear = currentDate.getFullYear();
         let data = JSON.parse(localStorage.getItem("newMoons"));
         if (data == null || data.year != currentYear) {
-
             localStorage.removeItem("newMoons");
 
             try {
@@ -229,8 +255,6 @@ function fetchMoonPhaseAPIData() {
                 const lastYearJSON = await responses[0].json();
                 const currentYearJSON = await responses[1].json();
                 const nextYearJSON = await responses[2].json();
-
-                console.log(lastYearJSON, currentYearJSON, nextYearJSON);
                 
                 data = {
                     "year" : currentYear,
@@ -250,7 +274,7 @@ function fetchMoonPhaseAPIData() {
 
 function updateBackground() {
     if (celestialPositionData == null) {
-        console.log("No json data loaded.");
+        console.warn("No json data loaded.");
         return;
     }
     const skyElements = document.getElementsByClassName("sky");
@@ -288,7 +312,7 @@ function updateBackground() {
         }
     }
 
-    function updateCelestialPosition() {
+    function updateCelestialPositions() {
         sun.setAttribute(
             "transform",
             "translate(" + sunX + "," + formatCelestialAltitude(getSunAltitude()) + ")"
@@ -335,7 +359,7 @@ function updateBackground() {
             }
 
             // should never go past this line
-            console.error("Something went wrong with finding the moon phase, returning -5 by default");
+            console.warn("Something went wrong with finding the moon phase, returning -5 by default");
             return -5;
         }
     }
@@ -350,7 +374,6 @@ function updateBackground() {
         const mountainLefts = document.getElementsByClassName("mountainLeft");
 
         const colorIndex = Math.floor((mountainLeftGradient.length - 1) * getSunBrightnessFactor());
-        console.log(colorIndex)
 
         for (let i = 0; i < mountainRights.length; i++) {
             const mountainRight = mountainRights[i];
@@ -398,7 +421,7 @@ function updateBackground() {
     }
 
     updateSkyColor();
-    updateCelestialPosition();
+    updateCelestialPositions();
     updateNightCelestialTransparency();
     updateMoonPhase();
     updateStarRotation();
@@ -428,10 +451,10 @@ function hexToRgb(hex) {
 
 function getColorGradient(mainColors, gradientSize) {
     if (mainColors.length < 2) {
-        console.log("mainColors should be an array of at least two colors");
+        console.warn("mainColors should be an array of at least two colors");
         return [];
     } else if (gradientSize % (mainColors.length - 1) != 0) {
-        console.log("uneven gradient size");
+        console.warn("uneven gradient size");
         return [];
     }
 
