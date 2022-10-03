@@ -20,7 +20,7 @@ let currentDate = new Date();
 let oldMinutes = -1;
 
 // Set to true to debug with slider
-let sliderEnabled = true;
+let sliderEnabled = false;
 
 // variables for fetched data
 let celestialPositionData;
