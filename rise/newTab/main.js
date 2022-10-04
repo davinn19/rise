@@ -178,7 +178,7 @@ function getDateString(date) {
  * Converts a string representation of time in hr:min:sec format into only minutes, discarding seconds and milliseconds.
  * 
  * @param {String} timeString String representation of time (hr:min:sec)
- * @returns {int} Total minutes between hours and minutes
+ * @returns {number} Minutes elapsed since 00:00:00
  */
 function getMinsFromTimeString(timeString) {
     let splitString = timeString.split(":");
@@ -194,6 +194,10 @@ function removeLoadingScreen() {
     loadingScreen.addEventListener("transitionend", () => loadingScreen.remove());
 }
 
+/**
+ * Gets the latitude and longitude coordintates of user.
+ * @returns {Promise<GeolocationCoordinates>} Coordinates of user.
+ */
 function getCoordinates() {
     return new Promise((resolve, reject) => {
         try {
@@ -204,8 +208,39 @@ function getCoordinates() {
     });
 }
 
+/**
+ * @typedef {Object} CelestialPositionData
+ * Stores rise and set of celestial objects.
+ * 
+ * Used inside {@link CelestialPositionsData}
+ * @property {number} givenAltitude How high the object is over the horizon at the time of data being fetched.
+ * @property {number} riseTimeMins When the object rises, in minutes past midnight.
+ * @property {number} setTimeMins When the object sets, in minutes past midnight.
+ * @property {number} formulaCoefficient Coefficient used in the formula to calculate the object's altitude at any given time.
+ */
+
+/**
+* @typedef {Object} CelestialPositionsData
+* Stores information parsed from IPGeolocation API
+* 
+* @property {String} date What day the data was fetched.
+* @property {number} givenTimeMins What time the data was fetched, in minutes past midnight.
+* @property {CelestialPositionData} sun Rise/set times of the sun.
+* @property {CelestialPositionData} moon Rise/set times of the moon.
+*/
+
+/** 
+* Fetches data of sunrise, sunset, moonrise, moonset times from IPGeolocation API, or loads it from local storage if available.
+* @returns {Promise<CelestialPositionsData>} Object containing all relevant data. See {@link CelestialPositionsData} and {@link CelestialPositionData}.
+*/
 function fetchCelestialPositionAPIData() {
-    // Gets moonrise/moonset of next day if current day doesn't have it
+    /**
+     * Gets moonrise/moonset of next day.
+     * 
+     * Used when the upcoming moonrise/moonset doesn't happen until the next day (happens near half moons).
+     * @param {boolean} willReturnMoonrise If set to true, returns the moonrise of the following day. Otherwise, returns the moonset instead.
+     * @returns {Promise<number>} The time the moonrise/moonset happens, in minutes past midnight.
+     */
     async function fetchNextMoonriseOrMoonset(willReturnMoonrise) {
         return await new Promise(async (resolve, reject) => {
             const coords = await getCoordinates();
@@ -224,6 +259,55 @@ function fetchCelestialPositionAPIData() {
         });
     }
 
+    /**
+     * Converts API response into {@link CelestialPositionsData} containing relevant data.
+     * @param {Response} response The API response.
+     * @returns {CelestialPositionsData} Object containing all relevant data.
+     */
+    async function parseAPIResponse(response) {
+        try {
+            const responseJSON = await response.json();
+            const givenTimeMins = getMinsFromTimeString(responseJSON.current_time);
+            const givenSunAltitude = responseJSON.sun_altitude;
+            const sunriseTimeMins = getMinsFromTimeString(responseJSON.sunrise);
+            const sunsetTimeMins = getMinsFromTimeString(responseJSON.sunset);
+            const givenMoonAltitude = responseJSON.moon_altitude;
+            let moonriseTimeMins = getMinsFromTimeString(responseJSON.moonrise);
+            let moonsetTimeMins = getMinsFromTimeString(responseJSON.moonset);
+
+            // Checks if moonrise and moonset are on the same day
+            if (isNaN(moonriseTimeMins)) {
+                moonriseTimeMins = await fetchNextMoonriseOrMoonset(true);
+            } else if (isNaN(moonsetTimeMins)) {
+                moonsetTimeMins = await fetchNextMoonriseOrMoonset(false);
+            }
+
+            const sunFormulaCoefficient = givenSunAltitude / Math.sin(Math.PI * (givenTimeMins - sunriseTimeMins) / (sunsetTimeMins - sunriseTimeMins)) / 90;
+            const moonFormulaCoefficient = givenMoonAltitude / Math.sin(Math.PI * (givenTimeMins - moonriseTimeMins) / (moonsetTimeMins - moonriseTimeMins)) / 90;
+
+            const formattedData = {
+                "date": getDateString(currentDate),
+                "givenTimeMins": givenTimeMins,
+                "sun": {
+                    "givenAltitude": givenSunAltitude,
+                    "riseTimeMins": sunriseTimeMins,
+                    "setTimeMins": sunsetTimeMins,
+                    "formulaCoefficient": sunFormulaCoefficient
+                },
+                "moon": {
+                    "givenAltitude": givenMoonAltitude,
+                    "riseTimeMins": moonriseTimeMins,
+                    "setTimeMins": moonsetTimeMins,
+                    "formulaCoefficient": moonFormulaCoefficient
+                }
+            }
+
+            return formattedData;
+        } catch (error) {
+            throw (error);
+        }
+    }
+
     return new Promise(async (resolve, reject) => {
 
         let data = JSON.parse(localStorage.getItem("celestialPositions"));
@@ -234,52 +318,31 @@ function fetchCelestialPositionAPIData() {
             try {
                 const coords = await getCoordinates();
                 const response = await fetch("https://api.ipgeolocation.io/astronomy?apiKey=b599741103fc4cccae8e98313394a59b&lat=" + coords.latitude + "&long=" + coords.longitude);
-                const responseJSON = await response.json();
 
-                const givenTimeMins = getMinsFromTimeString(responseJSON.current_time);
-                const givenSunAltitude = responseJSON.sun_altitude;
-                const sunriseTimeMins = getMinsFromTimeString(responseJSON.sunrise);
-                const sunsetTimeMins = getMinsFromTimeString(responseJSON.sunset);
-                const givenMoonAltitude = responseJSON.moon_altitude;
-                let moonriseTimeMins = getMinsFromTimeString(responseJSON.moonrise);
-                let moonsetTimeMins = getMinsFromTimeString(responseJSON.moonset);
-
-                // Gets moonrise/moonset of next day if current day doesn't have it
-                if (isNaN(moonriseTimeMins)) {
-                    moonriseTimeMins = await fetchNextMoonriseOrMoonset(true);
-                } else if (isNaN(moonsetTimeMins)) {
-                    moonsetTimeMins = await fetchNextMoonriseOrMoonset(false);
-                }
-
-                const formattedJSONData = {
-                    "date": getDateString(currentDate),
-                    "givenTimeMins": givenTimeMins,
-                    "sun": {
-                        "givenAltitude": givenSunAltitude,
-                        "riseTimeMins": sunriseTimeMins,
-                        "setTimeMins": sunsetTimeMins,
-                        "formulaCoefficient": givenSunAltitude / Math.sin(Math.PI * (givenTimeMins - sunriseTimeMins) / (sunsetTimeMins - sunriseTimeMins)) / 90
-                    },
-                    "moon": {
-                        "givenAltitude": givenMoonAltitude,
-                        "riseTimeMins": moonriseTimeMins,
-                        "setTimeMins": moonsetTimeMins,
-                        "formulaCoefficient": givenMoonAltitude / Math.sin(Math.PI * (givenTimeMins - moonriseTimeMins) / (moonsetTimeMins - moonriseTimeMins)) / 90
-                    }
-                }
-
-                localStorage.setItem("celestialPositions", JSON.stringify(formattedJSONData));
-                data = formattedJSONData;
+                data = parseAPIResponse(response);
+                localStorage.setItem("celestialPositions", JSON.stringify(data));
             } catch (error) {
                 reject(error);
             }
-
         }
-
         resolve(data);
     });
 }
 
+
+/**
+ * @typedef {Object} MoonPhaseData
+ * Object containing new moon dates and the year of recording.
+ * 
+ * 
+ * @property {number} year The year the data was fetched.
+ * @property {Array<String>} dates Array of all new moon occurences from the previous year to the following year. Date objects are stored in string form.
+ */
+
+/**
+ * Fetches data of moon phases for the current, previous, and next year, or loads it from local storage if available.
+ * @returns {Promise<MoonPhaseData>} Object containing all relevant data. See {@link MoonPhaseData}.
+ */
 function fetchMoonPhaseAPIData() {
     return new Promise(async (resolve, reject) => {
         const currentYear = currentDate.getFullYear();
@@ -305,11 +368,13 @@ function fetchMoonPhaseAPIData() {
                 reject(error);
             }
         }
-
         resolve(data);
     });
 }
 
+/**
+ * Updates the appearance and position of background objects based on the time.
+ */
 function updateBackground() {
     if (celestialPositionData == null) {
         console.warn("No json data loaded.");
@@ -319,16 +384,21 @@ function updateBackground() {
     const sun = document.getElementById("sun");
     const moon = document.getElementById("moon");
 
+    // Default values of sun and moon positions
     const sunX = 110;
     const moonX = 30;
     const celestialPeak = 10;
     const celestialHorizon = 60;
 
+    // Sunrise and sunset last 88 minutes
     const sunriseStart = celestialPositionData.sun.riseTimeMins - 88;
     const sunriseEnd = sunriseStart + 88;
     const sunsetStart = celestialPositionData.sun.setTimeMins;
     const sunsetEnd = sunsetStart + 88;
 
+    /**
+     * Changes the color of the sky based on the time, getting colors from {@link sunriseGradient} and {@link sunsetGradient}.
+     */
     function updateSkyColor() {
         let skyColor;
         if (minutesPastMidnight > sunsetEnd || minutesPastMidnight < sunriseStart) {
@@ -350,6 +420,9 @@ function updateBackground() {
         }
     }
 
+    /**
+     * Changes the positions of the sun and moon.
+     */
     function updateCelestialPositions() {
         sun.setAttribute(
             "transform",
@@ -361,10 +434,14 @@ function updateBackground() {
         );
     }
 
+    /**
+     * Changes the transparency of the moon, stars, and future night sky objects based on the sun's brightness.
+     * 
+     * if sun altitude is > 0, night celestials are invisible.
+     * 
+     * if sun altitude is < -10, transition opacity.
+     */
     function updateNightCelestialTransparency() {
-        // if sun altitude is > 0, night celestials are invisible
-        // if sun altitude is < -10, transition opacity
-
         const nightCelestials = document.getElementsByClassName("nightCelestial");
         const opacity = 1 - getSunBrightnessFactor();
 
@@ -374,6 +451,9 @@ function updateBackground() {
         }
     }
 
+    /**
+     * Shifts the negative space of the moon to emulate moon phases.
+     */
     function updateMoonPhase() {
         const negativeMoon = document.getElementById("moonNegative");
         const negativeRadius = Number.parseFloat(negativeMoon.getAttribute("r"));
@@ -382,6 +462,10 @@ function updateBackground() {
 
         negativeMoon.setAttribute("cx", getNegativeMoonPosition());
 
+        /**
+         * Gets the position of the moon's negative space.
+         * @returns {number} Distance for the negative space to move relative to the actual moon.
+         */
         function getNegativeMoonPosition() {
             const currentDateMS = currentDate.getTime();
             let prevNewMoonDateMS = Date.parse(newMoonsData[0]);
@@ -402,11 +486,17 @@ function updateBackground() {
         }
     }
 
+    /**
+     * Slowly rotates the stars to the left (east to west) across the sky.
+     */
     function updateStarRotation() {
         const stars = document.getElementById("stars");
         stars.setAttribute("transform", "translate(80,60) rotate(" + (180 * ((1400 - minutesPastMidnight) / 1400)) + ")");
     }
 
+     /**
+     * Changes the color of the mountains based on the sun's brightness, getting colors from {@link mountainLeftGradient} and {@link mountainRightGradient}.
+     */
     function updateMountainColors() {
         const mountainRights = document.getElementsByClassName("mountainRight");
         const mountainLefts = document.getElementsByClassName("mountainLeft");
@@ -424,10 +514,18 @@ function updateBackground() {
         }
     }
 
+    /**
+     * Gets the altitude of the sun.
+     * @returns {number} Altitude of the sun.
+     */
     function getSunAltitude() {
         return getCelestialAltitude(celestialPositionData.sun);
     }
 
+    /**
+     * Gets the altitude of the moon.
+     * @returns {number} Altitude of the moon.
+     */
     function getMoonAltitude() {
         return getCelestialAltitude(celestialPositionData.moon);
     }
@@ -437,12 +535,23 @@ function updateBackground() {
         return celestialJSON.formulaCoefficient * Math.sin(Math.PI * (minutesPastMidnight - celestialJSON.riseTimeMins) / (celestialJSON.setTimeMins - celestialJSON.riseTimeMins));
     }
 
+    /**
+     * Adjusts the altitude of a celestial object to scale with the preset horizon/peak.
+     * 
+     * Ensures that the celestial object is always on screen.
+     * @param {number} altitude Altitude of celestial object to format.
+     * @returns {number} Formatted altitude.
+     */
     function formatCelestialAltitude(altitude) {
-        // TODO have some proper documentation explaining the formula
         return -1 * (celestialHorizon - celestialPeak) * altitude + celestialHorizon;
     }
 
-    // Used to set opacity of night objects and color of mountain
+    /**
+     * Gets the sun's brightness, based on its altitude.
+     * 
+     * Used to set the opacity of night objects and color of mountains.
+     * @returns {number} Brightness of the sun.
+     */
     function getSunBrightnessFactor() {
         const sunAlitutde = getSunAltitude() * 90;
         let brightnessFactor;
