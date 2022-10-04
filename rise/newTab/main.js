@@ -11,7 +11,7 @@ const sunsetGradient = getColorGradient([skyDayColor, skyTwilight3Color, skyTwil
 const mountainRightNightColor = "#6b2390";
 const mountainLeftNightColor = "#6918b4";
 const mountainRightDayColor = "#2c93cc";
-const mountainLeftDayColor = "#296fb0";
+const mountainLeftDayColor = "#2375a3";
 const mountainRightGradient = getColorGradient([mountainRightNightColor, mountainRightDayColor], 100);
 const mountainLeftGradient = getColorGradient([mountainLeftNightColor, mountainLeftDayColor], 100);
 
@@ -19,14 +19,16 @@ let minutesPastMidnight = 0;
 let currentDate = new Date();
 let oldMinutes = -1;
 
-// Set to true to debug with slider
-let sliderEnabled = false;
+/**
+ * Set to true to enable the slider override
+ */
+let sliderEnabled = true;
 
 // variables for fetched data
 let celestialPositionData;
 let newMoonsData;
 
-window.onload = async function() {
+window.onload = async function () {
     const fetchedData = await Promise.all([fetchCelestialPositionAPIData(), fetchMoonPhaseAPIData()]);
 
     celestialPositionData = fetchedData[0];
@@ -34,39 +36,53 @@ window.onload = async function() {
     updateTime();
 
     if (sliderEnabled) {
-        let slider = document.getElementById("myRange");
-        slider.oninput = function () {
-            // TODO standardize usage of minutesPastMidnight OR currentDate (leaning towards minutesPastMidnight)
-            minutesPastMidnight = this.value;
-            currentDate.setHours(Math.floor(minutesPastMidnight / 60));
-            currentDate.setMinutes(minutesPastMidnight % 60);
-            currentDate.setSeconds(0);
-            currentDate.setMilliseconds(0);
-
-            onTimeChanged();
-        }
-    }
-    else {
+        loadSliderDebug();
+    } else {
         setInterval(updateTime, 10);
-    }
-
-    const starGroup = document.getElementById("stars");
-    for (let i = 0; i < 500; i++) {
-        const newStar = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        newStar.setAttribute("class","star");
-        const starSize = Math.random() / 2 + 0.25;
-        newStar.setAttribute("width", starSize + "");
-        newStar.setAttribute("height", starSize + "");
-        newStar.setAttribute("x", Math.random() * 320 - 160 + "");
-        newStar.setAttribute("y", Math.random () * 180 - 90 + "");
-        newStar.setAttribute("transform","rotate(" + Math.random() * 90 + ")");
-
-        starGroup.appendChild(newStar);
     }
 
     removeLoadingScreen();
 };
 
+/**
+ * Overrides the updating time with a manual slider, meant for debugging. 
+ */
+function loadSliderDebug() {
+    let slider = document.getElementById("myRange");
+    slider.oninput = function () {
+        // TODO standardize usage of minutesPastMidnight OR currentDate (leaning towards minutesPastMidnight)
+        minutesPastMidnight = this.value;
+        currentDate.setHours(Math.floor(minutesPastMidnight / 60));
+        currentDate.setMinutes(minutesPastMidnight % 60);
+        currentDate.setSeconds(0);
+        currentDate.setMilliseconds(0);
+
+        onTimeChanged();
+    }
+}
+
+/**
+ * Generates stars in the night sky
+ */
+function createStars() {
+    const starGroup = document.getElementById("stars");
+    for (let i = 0; i < 500; i++) {
+        const newStar = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        newStar.setAttribute("class", "star");
+        const starSize = Math.random() / 2 + 0.25;
+        newStar.setAttribute("width", starSize + "");
+        newStar.setAttribute("height", starSize + "");
+        newStar.setAttribute("x", Math.random() * 320 - 160 + "");
+        newStar.setAttribute("y", Math.random() * 180 - 90 + "");
+        newStar.setAttribute("transform", "rotate(" + Math.random() * 90 + ")");
+
+        starGroup.appendChild(newStar);
+    }
+}
+
+/**
+ * Updates the currentDate variable, calling onTimeChanged if the time changed by a minute.
+ */
 function updateTime() {
     currentDate = new Date();
     const minutes = currentDate.getMinutes();
@@ -77,12 +93,18 @@ function updateTime() {
     }
 }
 
+/**
+ * Calls any function that updates based on time
+ */
 function onTimeChanged() {
     updateClock();
     updateGreeting();
     updateBackground();
 }
 
+/**
+ * Updates the time displayed by the clock.
+ */
 function updateClock() {
     let hour = currentDate.getHours();
     const minute = currentDate.getMinutes();
@@ -94,23 +116,26 @@ function updateClock() {
         timeSuffix = "pm";
     }
 
+    // Adjusts hours from 24 hr to 12 hr format
     if (hour == 0) {
         hour = 12;
     } else if (hour > 12) {
         hour -= 12;
     }
 
-    let minuteString;
-    if (minute < 10) {
-        minuteString = "0" + minute;
-    } else {
-        minuteString = "" + minute;
-    }
+    // Always displays minutes with 2 digits
+    const minuteString = minute.toLocaleString("en-US", {
+        minimumIntegerDigits: 2,
+        useGrouping: false,
+    });
 
     document.getElementById("clockNumbers").textContent = "" + hour + ":" + minuteString;
     document.getElementById("clockTimeOfDay").textContent = timeSuffix;
 }
 
+/**
+ * Updates greeting based on time of day.
+ */
 function updateGreeting() {
     const hour = currentDate.getHours();
     let greeting;
@@ -127,9 +152,15 @@ function updateGreeting() {
     document.getElementById("greeting").textContent = "Good " + greeting + ".";
 }
 
+/**
+ * Gets a string representation of a Date object in YYYY-MM-DD format.
+ * 
+ * @param {Date} date - The Date object
+ * @returns {String} The string represtentation of the Date object, in YYYY-MM-DD format
+ */
 function getDateString(date) {
     const dateString =
-    date.getFullYear() +
+        date.getFullYear() +
         "-" +
         (date.getMonth() + 1).toLocaleString("en-US", {
             minimumIntegerDigits: 2,
@@ -143,12 +174,20 @@ function getDateString(date) {
     return dateString;
 }
 
-// convert hr:min:sec string to mins int, discarding seconds and ms
+/**
+ * Converts a string representation of time in hr:min:sec format into only minutes, discarding seconds and milliseconds.
+ * 
+ * @param {String} timeString String representation of time (hr:min:sec)
+ * @returns {int} Total minutes between hours and minutes
+ */
 function getMinsFromTimeString(timeString) {
     let splitString = timeString.split(":");
     return parseInt(splitString[0]) * 60 + parseInt(splitString[1]);
 }
 
+/**
+ * Fades out and removes loading screen.
+ */
 function removeLoadingScreen() {
     const loadingScreen = document.getElementById("loadingScreen");
     loadingScreen.style.opacity = 0;
@@ -156,7 +195,7 @@ function removeLoadingScreen() {
 }
 
 function getCoordinates() {
-    return new Promise((resolve,reject) => {
+    return new Promise((resolve, reject) => {
         try {
             navigator.geolocation.getCurrentPosition((position) => resolve(position.coords));
         } catch (error) {
@@ -166,10 +205,9 @@ function getCoordinates() {
 }
 
 function fetchCelestialPositionAPIData() {
-
     // Gets moonrise/moonset of next day if current day doesn't have it
     async function fetchNextMoonriseOrMoonset(willReturnMoonrise) {
-        return await new Promise(async(resolve, reject) => {
+        return await new Promise(async (resolve, reject) => {
             const coords = await getCoordinates();
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
@@ -197,7 +235,7 @@ function fetchCelestialPositionAPIData() {
                 const coords = await getCoordinates();
                 const response = await fetch("https://api.ipgeolocation.io/astronomy?apiKey=b599741103fc4cccae8e98313394a59b&lat=" + coords.latitude + "&long=" + coords.longitude);
                 const responseJSON = await response.json();
-                
+
                 const givenTimeMins = getMinsFromTimeString(responseJSON.current_time);
                 const givenSunAltitude = responseJSON.sun_altitude;
                 const sunriseTimeMins = getMinsFromTimeString(responseJSON.sunrise);
@@ -212,7 +250,7 @@ function fetchCelestialPositionAPIData() {
                 } else if (isNaN(moonsetTimeMins)) {
                     moonsetTimeMins = await fetchNextMoonriseOrMoonset(false);
                 }
-    
+
                 const formattedJSONData = {
                     "date": getDateString(currentDate),
                     "givenTimeMins": givenTimeMins,
@@ -229,7 +267,7 @@ function fetchCelestialPositionAPIData() {
                         "formulaCoefficient": givenMoonAltitude / Math.sin(Math.PI * (givenTimeMins - moonriseTimeMins) / (moonsetTimeMins - moonriseTimeMins)) / 90
                     }
                 }
-    
+
                 localStorage.setItem("celestialPositions", JSON.stringify(formattedJSONData));
                 data = formattedJSONData;
             } catch (error) {
@@ -251,14 +289,14 @@ function fetchMoonPhaseAPIData() {
 
             try {
                 const responses = await Promise.all([fetch("https://craigchamberlain.github.io/moon-data/api/new-moon-data/" + (currentYear - 1) + "/"), fetch("https://craigchamberlain.github.io/moon-data/api/new-moon-data/" + currentYear + "/"), fetch("https://craigchamberlain.github.io/moon-data/api/new-moon-data/" + (currentYear + 1) + "/")]);
-                
+
                 const lastYearJSON = await responses[0].json();
                 const currentYearJSON = await responses[1].json();
                 const nextYearJSON = await responses[2].json();
-                
+
                 data = {
-                    "year" : currentYear,
-                    "dates" : lastYearJSON.concat(currentYearJSON).concat(nextYearJSON)
+                    "year": currentYear,
+                    "dates": lastYearJSON.concat(currentYearJSON).concat(nextYearJSON)
                 }
 
                 localStorage.setItem("newMoons", JSON.stringify(data));
@@ -346,7 +384,7 @@ function updateBackground() {
 
         function getNegativeMoonPosition() {
             const currentDateMS = currentDate.getTime();
-            let prevNewMoonDateMS = Date.parse(newMoonsData[0]);  
+            let prevNewMoonDateMS = Date.parse(newMoonsData[0]);
 
             for (let i = 1; i < newMoonsData.length; i++) {
                 const nextNewMoonDateMS = Date.parse(newMoonsData[i]);
@@ -355,7 +393,7 @@ function updateBackground() {
                 } else {
                     // TODO implement wave formula instead of linear, explain formula
                     return -negativeMoonDefaultPosition + 2 * negativeMoonDefaultPosition * (currentDateMS - prevNewMoonDateMS) / (nextNewMoonDateMS - prevNewMoonDateMS);
-                } 
+                }
             }
 
             // should never go past this line
@@ -366,7 +404,7 @@ function updateBackground() {
 
     function updateStarRotation() {
         const stars = document.getElementById("stars");
-        stars.setAttribute("transform", "translate(80,60) rotate(" + (360 * ((1400 - minutesPastMidnight) / 1400)) + ")");
+        stars.setAttribute("transform", "translate(80,60) rotate(" + (180 * ((1400 - minutesPastMidnight) / 1400)) + ")");
     }
 
     function updateMountainColors() {
@@ -377,12 +415,12 @@ function updateBackground() {
 
         for (let i = 0; i < mountainRights.length; i++) {
             const mountainRight = mountainRights[i];
-            mountainRight.setAttribute("style","fill:" + mountainRightGradient[colorIndex]);
+            mountainRight.setAttribute("style", "fill:" + mountainRightGradient[colorIndex]);
         }
 
         for (let i = 0; i < mountainRights.length; i++) {
             const mountainLeft = mountainLefts[i];
-            mountainLeft.setAttribute("style","fill:" + mountainLeftGradient[colorIndex]);
+            mountainLeft.setAttribute("style", "fill:" + mountainLeftGradient[colorIndex]);
         }
     }
 
