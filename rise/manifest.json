@@ -21,7 +21,6 @@
 		"persistent": true
 	},
 	"permissions" : [
-		"alarms",
-		"tabs"
+		"geolocation"
 	]
 }
