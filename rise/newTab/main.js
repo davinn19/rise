@@ -106,9 +106,29 @@ function updateTime() {
  * Calls any function that updates based on time
  */
 function onTimeChanged() {
+    updateTextColors();
     updateClock();
     updateGreeting();
     updateBackground();
+    
+}
+/**
+ * Changes the color of text based of the background brightness
+ */
+function updateTextColors() {
+    let newTextColor;
+    const brightness = getSunBrightnessFactor();
+    if (brightness >= 1) {
+        newTextColor = "black"
+    } else if (brightness <= 0) {
+        newTextColor = "white"
+    } else {
+        return;
+    }
+
+    for (const child of document.getElementById("foreground").children) {
+        child.style.color = newTextColor;
+    }
 }
 
 /**
@@ -374,15 +394,6 @@ function fetchMoonPhaseAPIData() {
     });
 }
 
-function fetchWeatherAPIData() {
-    // TODO implement
-    return new Promise(async (resolve, reject) => {
-
-        const currentYear = currentDate.getFullYear();
-
-    });
-}
-
 /**
  * Updates the appearance and position of background objects based on the time.
  */
@@ -473,6 +484,8 @@ function updateBackground() {
      * Shifts the negative space of the moon to emulate moon phases.
      */
     function updateMoonPhase() {
+
+        // TODO experiement with svg curves
         const negativeMoon = document.getElementById("moonNegative");
         const negativeRadius = Number.parseFloat(negativeMoon.getAttribute("r"));
         const moonRadius = Number.parseFloat(document.getElementById("moonObject").getAttribute("r"));
@@ -532,36 +545,11 @@ function updateBackground() {
     }
 
     /**
-     * Gets the altitude of the sun.
-     * 
-     * Reference for formula:
-     * 
-     * https://sinovoltaics.com/learning-center/basics/declination-angle/
-     * 
-     * https://sciencing.com/many-hours-daylight-summer-8196183.html
-     * 
-     * https://www.desmos.com/calculator/sr4we6d8xv
-     * @returns {number} Altitude of the sun.
-     */
-    function getSunAltitude() {
-        // TODO implement more accurate formula
-        // const declination = -23.45 * Math.cos(2 * Math.PI / 365 * (getDayOfYear() + 10)) * Math.sign(coords.latitude);
-        // const altitudeAtNoon = 90 - Math.abs(coords.latitude) + declination;
-
-        return getCelestialAltitude(celestialPositionData.sun);
-    }
-
-    /**
      * Gets the altitude of the moon.
      * @returns {number} Altitude of the moon.
      */
     function getMoonAltitude() {
         return getCelestialAltitude(celestialPositionData.moon);
-    }
-
-    function getCelestialAltitude(celestialJSON) {
-        // TODO have some proper documentation explaining the formula
-        return celestialJSON.formulaCoefficient * Math.sin(Math.PI * (minutesPastMidnight - celestialJSON.riseTimeMins) / (celestialJSON.setTimeMins - celestialJSON.riseTimeMins));
     }
 
     /**
@@ -574,27 +562,51 @@ function updateBackground() {
     function formatCelestialAltitude(altitude) {
         return -1 * (celestialHorizon - celestialPeak) * altitude / 90 + celestialHorizon;
     }
+}
 
-    /**
-     * Gets the sun's brightness, based on its altitude.
+/**
+     * Gets the altitude of the sun.
      * 
-     * Used to set the opacity of night objects and color of mountains.
-     * @returns {number} Brightness of the sun.
+     * Reference for formula:
+     * 
+     * https://sinovoltaics.com/learning-center/basics/declination-angle/
+     * 
+     * https://sciencing.com/many-hours-daylight-summer-8196183.html
+     * 
+     * https://www.desmos.com/calculator/sr4we6d8xv
+     * @returns {number} Altitude of the sun.
      */
-    function getSunBrightnessFactor() {
-        const sunAlitutde = getSunAltitude();
-        let brightnessFactor;
-        if (sunAlitutde > 0) {
-            brightnessFactor = 1;
-        }
-        else if (sunAlitutde < -10) {
-            brightnessFactor = 0;
-        }
-        else {
-            brightnessFactor = (sunAlitutde + 10) / 10;
-        }
-        return brightnessFactor;
+ function getSunAltitude() {
+    // TODO implement more accurate formula
+    // const declination = -23.45 * Math.cos(2 * Math.PI / 365 * (getDayOfYear() + 10)) * Math.sign(coords.latitude);
+    // const altitudeAtNoon = 90 - Math.abs(coords.latitude) + declination;
+    return getCelestialAltitude(celestialPositionData.sun);
+}
+
+function getCelestialAltitude(celestialJSON) {
+    // TODO have some proper documentation explaining the formula
+    return celestialJSON.formulaCoefficient * Math.sin(Math.PI * (minutesPastMidnight - celestialJSON.riseTimeMins) / (celestialJSON.setTimeMins - celestialJSON.riseTimeMins));
+}
+
+/**
+ * Gets the sun's brightness, based on its altitude.
+ * 
+ * Used to set the opacity of night objects and color of mountains.
+ * @returns {number} Brightness of the sun.
+ */
+function getSunBrightnessFactor() {
+    const sunAlitutde = getSunAltitude();
+    let brightnessFactor;
+    if (sunAlitutde > 0) {
+        brightnessFactor = 1;
     }
+    else if (sunAlitutde < -10) {
+        brightnessFactor = 0;
+    }
+    else {
+        brightnessFactor = (sunAlitutde + 10) / 10;
+    }
+    return brightnessFactor;
 }
 
 // TODO document
