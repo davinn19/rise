@@ -566,44 +566,11 @@ function updateBackground() {
         }
         return brightnessFactor;
     }
-
-    updateSkyColor();
-    updateCelestialPositions();
-    updateNightCelestialTransparency();
-    updateMoonPhase();
-    updateStarRotation();
-    updateMountainColors();
 }
 
-// COLOR GRADIENT STUFF //
-function componentToHex(c) {
-    let hex = c.toString(16);
-    return hex.length == 1 ? "0" + hex : hex;
-}
-
-function rgbToHex(r, g, b) {
-    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
-}
-
-function hexToRgb(hex) {
-    let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-        ? {
-            r: parseInt(result[1], 16),
-            g: parseInt(result[2], 16),
-            b: parseInt(result[3], 16),
-        }
-        : null;
-}
-
+// TODO document
 function getColorGradient(mainColors, gradientSize) {
-    if (mainColors.length < 2) {
-        console.warn("mainColors should be an array of at least two colors");
-        return [];
-    } else if (gradientSize % (mainColors.length - 1) != 0) {
-        console.warn("uneven gradient size");
-        return [];
-    }
+    verifyInputs();
 
     const colors = [];
     const colorsPerInterval = gradientSize / (mainColors.length - 1);
@@ -627,4 +594,34 @@ function getColorGradient(mainColors, gradientSize) {
     }
 
     return colors;
+
+    function verifyInputs() {
+        if (mainColors.length < 2) {
+            console.warn("mainColors should be an array of at least two colors");
+            return [];
+        } else if (gradientSize % (mainColors.length - 1) != 0) {
+            console.warn("uneven gradient size");
+            return [];
+        }
+    }
+
+    function componentToHex(c) {
+        let hex = c.toString(16);
+        return hex.length == 1 ? "0" + hex : hex;
+    }
+
+    function rgbToHex(r, g, b) {
+        return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+    }
+
+    function hexToRgb(hex) {
+        let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result
+            ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16),
+            }
+            : null;
+    }
 }
