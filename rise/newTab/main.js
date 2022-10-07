@@ -476,7 +476,7 @@ function updateBackground() {
         const negativeMoon = document.getElementById("moonNegative");
         const negativeRadius = Number.parseFloat(negativeMoon.getAttribute("r"));
         const moonRadius = Number.parseFloat(document.getElementById("moonObject").getAttribute("r"));
-        const negativeMoonDefaultPosition = negativeRadius + moonRadius;
+        const fullMoonPosition = negativeRadius + moonRadius;
 
         negativeMoon.setAttribute("cx", getNegativeMoonPosition());
 
@@ -493,8 +493,7 @@ function updateBackground() {
                 if (currentDateMS > nextNewMoonDateMS) {
                     prevNewMoonDateMS = nextNewMoonDateMS;
                 } else {
-                    // TODO implement wave formula instead of linear, explain formula
-                    return -negativeMoonDefaultPosition + 2 * negativeMoonDefaultPosition * (currentDateMS - prevNewMoonDateMS) / (nextNewMoonDateMS - prevNewMoonDateMS);
+                    return fullMoonPosition * Math.cos(2 * Math.PI * (currentDateMS - prevNewMoonDateMS) / (nextNewMoonDateMS - prevNewMoonDateMS));
                 }
             }
 
