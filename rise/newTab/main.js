@@ -39,6 +39,7 @@ window.onload = async function () {
     if (sliderEnabled) {
         loadSliderDebug();
     } else {
+        document.getElementsByClassName("slidecontainer")[0].remove()
         setInterval(updateTime, 10);
     }
     removeLoadingScreen();
