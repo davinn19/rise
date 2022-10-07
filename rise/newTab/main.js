@@ -516,9 +516,21 @@ function updateBackground() {
 
     /**
      * Gets the altitude of the sun.
+     * 
+     * Reference for formula:
+     * 
+     * https://sinovoltaics.com/learning-center/basics/declination-angle/
+     * 
+     * https://sciencing.com/many-hours-daylight-summer-8196183.html
+     * 
+     * https://www.desmos.com/calculator/sr4we6d8xv
      * @returns {number} Altitude of the sun.
      */
     function getSunAltitude() {
+        // TODO implement more accurate formula
+        // const declination = -23.45 * Math.cos(2 * Math.PI / 365 * (getDayOfYear() + 10)) * Math.sign(coords.latitude);
+        // const altitudeAtNoon = 90 - Math.abs(coords.latitude) + declination;
+
         return getCelestialAltitude(celestialPositionData.sun);
     }
 
