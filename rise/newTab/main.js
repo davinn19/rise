@@ -22,8 +22,8 @@ let oldMinutes = -1;
 /**
  * Set to true to enable the slider overrides
  */
-const timeDebug = false;
-const moonPhaseDebug = false;
+const timeDebug = true;
+const moonPhaseDebug = true;
 
 let debugMoonCyclePercentage = 0;
 
@@ -547,7 +547,7 @@ function updateBackground() {
 
         // Prevents glitching with "infinite" radius during half moons
         if (moonCyclePercentage == 0.25 || moonCyclePercentage == 0.75) {
-            moonCyclePercentage -= 0.001;
+            moonCyclePercentage -= 0.00001;
         }
 
         // swaps between waxing and waning
@@ -559,7 +559,6 @@ function updateBackground() {
                 
         const curveRadius = 5 / Math.cbrt(Math.cos(2 * Math.PI * moonCyclePercentage));
 
-        console.log(curveRadius, moonCyclePercentage);
         // swaps between crescent and gibbous
         const flipCurve = (moonCyclePercentage > 0.25 && moonCyclePercentage < 0.75) ? 0 : 1;
 
