@@ -4,8 +4,7 @@ const skyTwilight1Color = "#18404e";
 const skyTwilight2Color = "#316577";
 const skyTwilight3Color = "#63b4cf";
 const skyDayColor = "#b1dae7";
-const sunriseGradient = getColorGradient([skyNightColor, skyTwilight1Color, skyTwilight2Color, skyTwilight3Color, skyDayColor], 88);
-const sunsetGradient = getColorGradient([skyDayColor, skyTwilight3Color, skyTwilight2Color, skyTwilight1Color, skyNightColor], 88);
+const skyColorGradient = getColorGradient([skyNightColor, skyTwilight1Color, skyTwilight2Color, skyTwilight3Color, skyDayColor], 88);
 
 // Presets for mountain colors
 const mountainRightNightColor = "#6b2390";
@@ -448,12 +447,6 @@ function updateBackground() {
     const celestialPeak = 10;
     const celestialHorizon = 60;
 
-    // Sunrise and sunset last 88 minutes
-    const sunriseStart = celestialPositionData.sun.riseTimeMins - 88;
-    const sunriseEnd = sunriseStart + 88;
-    const sunsetStart = celestialPositionData.sun.setTimeMins;
-    const sunsetEnd = sunsetStart + 88;
-
     updateSkyColor();
     updateCelestialPositions();
     updateNightCelestialTransparency();
@@ -462,23 +455,12 @@ function updateBackground() {
     updateMountainColors();
 
     /**
-     * Changes the color of the sky based on the time, getting colors from {@link sunriseGradient} and {@link sunsetGradient}.
+     * Changes the color of the sky based on the sun brightness, getting colors from {@link skyColorGradient}.
      */
     function updateSkyColor() {
-        let skyColor;
-        if (minutesPastMidnight > sunsetEnd || minutesPastMidnight < sunriseStart) {
-            skyColor = skyNightColor;
-        } else if (minutesPastMidnight >= sunsetStart) {
-            // find sunset gradient
-            const minutesPastSunset = minutesPastMidnight - sunsetStart;
-            skyColor = sunsetGradient[minutesPastSunset];
-        } else if (minutesPastMidnight > sunriseEnd) {
-            skyColor = skyDayColor;
-        } else {
-            // find sunrise gradient
-            const minutesPastSunrise = minutesPastMidnight - sunriseStart;
-            skyColor = sunriseGradient[minutesPastSunrise];
-        }
+        const brightness = getSunBrightnessFactor();
+        const skyColorIndex = Math.floor(brightness * (skyColorGradient.length - 1));
+        const skyColor = skyColorGradient[skyColorIndex];
 
         for (let i = 0; i < skyElements.length; i++) {
             skyElements.item(i).style.fill = skyColor;
@@ -646,14 +628,14 @@ function getCelestialAltitude(celestialJSON) {
 function getSunBrightnessFactor() {
     const sunAlitutde = getSunAltitude();
     let brightnessFactor;
-    if (sunAlitutde > 0) {
+    if (sunAlitutde > -5) {
         brightnessFactor = 1;
     }
-    else if (sunAlitutde < -10) {
+    else if (sunAlitutde < -20) {
         brightnessFactor = 0;
     }
     else {
-        brightnessFactor = (sunAlitutde + 10) / 10;
+        brightnessFactor = (sunAlitutde + 20) / 15;
     }
     return brightnessFactor;
 }
