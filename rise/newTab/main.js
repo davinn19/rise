@@ -20,9 +20,12 @@ let currentDate = new Date();
 let oldMinutes = -1;
 
 /**
- * Set to true to enable the slider override
+ * Set to true to enable the slider overrides
  */
-let sliderEnabled = true;
+const timeDebug = false;
+const moonPhaseDebug = false;
+
+let debugMoonCyclePercentage = 0;
 
 // variables for fetched data
 let celestialPositionData;
@@ -36,29 +39,61 @@ window.onload = async function () {
     newMoonsData = fetchedData[1].dates;
     updateTime();
 
-    if (sliderEnabled) {
-        loadSliderDebug();
+    if (timeDebug || moonPhaseDebug) {
+        loadDebugModes();
     } else {
-        document.getElementsByClassName("slidecontainer")[0].remove()
+        document.getElementById("debugSliders").remove();
         setInterval(updateTime, 10);
     }
     removeLoadingScreen();
 
     /**
-     * Overrides the updating time with a manual slider, meant for debugging. 
+     * Creates sliders to manually set different values. 
      */
-    function loadSliderDebug() {
-        let slider = document.getElementById("myRange");
-        slider.oninput = function () {
-            // TODO standardize usage of minutesPastMidnight OR currentDate (leaning towards minutesPastMidnight)
-            minutesPastMidnight = this.value;
-            currentDate.setHours(Math.floor(minutesPastMidnight / 60));
-            currentDate.setMinutes(minutesPastMidnight % 60);
-            currentDate.setSeconds(0);
-            currentDate.setMilliseconds(0);
+    function loadDebugModes() {
+        const sliderContainer = document.getElementById("debugSliders");
 
-            onTimeChanged();
+        if (timeDebug) {
+            const timeSlider = createSlider("time", 0, 1439);
+            timeSlider.oninput = function () {
+                // TODO standardize usage of minutesPastMidnight OR currentDate (leaning towards minutesPastMidnight)
+                minutesPastMidnight = this.value;
+                currentDate.setHours(Math.floor(minutesPastMidnight / 60));
+                currentDate.setMinutes(minutesPastMidnight % 60);
+                currentDate.setSeconds(0);
+                currentDate.setMilliseconds(0);
+    
+                onTimeChanged();
+            }
         }
+        
+        if (moonPhaseDebug) {
+            const moonPhaseSlider = createSlider("time");
+            moonPhaseSlider.oninput = function() {
+                debugMoonCyclePercentage = this.value / 100;
+                onTimeChanged();
+            }
+        }
+
+        /**
+         * Creates a debug slider with the parameters
+         * @param {number} elementID The id assigned to the slider: idDebugSlider
+         * @param {number} minVal The minimun value of the slider.
+         * @param {number} maxVal The maximun value of the slider.
+         * @returns 
+         */
+        function createSlider(elementID, minVal, maxVal) {
+            const newSlider = document.createElement("input");
+            newSlider.id = elementID + "DebugSlider";
+            newSlider.setAttribute("type","range");
+            newSlider.classList.add("slider");
+            newSlider.setAttribute("min", "" + minVal);
+            newSlider.setAttribute("max", "" + maxVal);
+
+            sliderContainer.appendChild(newSlider);
+            return newSlider;
+        }
+        
     }
 
     /**
@@ -482,39 +517,53 @@ function updateBackground() {
     }
 
     /**
-     * Shifts the negative space of the moon to emulate moon phases.
+     * Updates the appearance of the moon based on the moon phase.
+     * 
+     * Graph of "curve radius" https://www.desmos.com/calculator/yg9kzupbap
      */
     function updateMoonPhase() {
 
-        // TODO experiement with svg curves
-        const negativeMoon = document.getElementById("moonNegative");
-        const negativeRadius = Number.parseFloat(negativeMoon.getAttribute("r"));
-        const moonRadius = Number.parseFloat(document.getElementById("moonObject").getAttribute("r"));
-        const fullMoonPosition = negativeRadius + moonRadius;
+        const moonObject = document.getElementById("moonObject");
 
-        negativeMoon.setAttribute("cx", getNegativeMoonPosition());
+        const currentDateMS = currentDate.getTime();
+        let prevNewMoonDateMS = Date.parse(newMoonsData[0]);
 
-        /**
-         * Gets the position of the moon's negative space.
-         * @returns {number} Distance for the negative space to move relative to the actual moon.
-         */
-        function getNegativeMoonPosition() {
-            const currentDateMS = currentDate.getTime();
-            let prevNewMoonDateMS = Date.parse(newMoonsData[0]);
+        let moonCyclePercentage;
 
+        if (moonPhaseDebug) {
+            moonCyclePercentage = debugMoonCyclePercentage; // uses debug value instead
+        } else {
+            // finds which new moon dates we are between and how far in the cycle we progressed
             for (let i = 1; i < newMoonsData.length; i++) {
                 const nextNewMoonDateMS = Date.parse(newMoonsData[i]);
                 if (currentDateMS > nextNewMoonDateMS) {
                     prevNewMoonDateMS = nextNewMoonDateMS;
                 } else {
-                    return fullMoonPosition * Math.cos(2 * Math.PI * (currentDateMS - prevNewMoonDateMS) / (nextNewMoonDateMS - prevNewMoonDateMS));
+                    moonCyclePercentage = (currentDateMS - prevNewMoonDateMS) / (nextNewMoonDateMS - prevNewMoonDateMS);
+                    break;
                 }
             }
-
-            // should never go past this line
-            console.warn("Something went wrong with finding the moon phase, returning -5 by default");
-            return -5;
         }
+
+        // Prevents glitching with "infinite" radius during half moons
+        if (moonCyclePercentage == 0.25 || moonCyclePercentage == 0.75) {
+            moonCyclePercentage -= 0.001;
+        }
+
+        // swaps between waxing and waning
+        if (moonCyclePercentage > 0.5) {
+            moonObject.setAttribute("transform","rotate(180)");
+        } else {
+            moonObject.setAttribute("transform","rotate(0)");
+        }
+                
+        const curveRadius = 5 / Math.cbrt(Math.cos(2 * Math.PI * moonCyclePercentage));
+
+        console.log(curveRadius, moonCyclePercentage);
+        // swaps between crescent and gibbous
+        const flipCurve = (moonCyclePercentage > 0.25 && moonCyclePercentage < 0.75) ? 0 : 1;
+
+        moonObject.setAttribute("d","M 0 5 A 5 5 0 0 0 0 -5 A " + curveRadius + " " + curveRadius + " 0 0 " + flipCurve + " 0 5")
     }
 
     /**
@@ -565,7 +614,7 @@ function updateBackground() {
     }
 }
 
-/**
+    /**
      * Gets the altitude of the sun.
      * 
      * Reference for formula:
@@ -574,7 +623,7 @@ function updateBackground() {
      * 
      * https://sciencing.com/many-hours-daylight-summer-8196183.html
      * 
-     * https://www.desmos.com/calculator/sr4we6d8xv
+     * https://www.desmos.com/calculator/y5ymbedinl
      * @returns {number} Altitude of the sun.
      */
  function getSunAltitude() {
