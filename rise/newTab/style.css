@@ -75,10 +75,6 @@ body,
 
 /* TEST */
 
-.slidecontainer {
-    width: 100%; /* Width of the outside container */
-}
-
 /* The slider itself */
 .slider {
     -webkit-appearance: none; /* Override default CSS styles */
