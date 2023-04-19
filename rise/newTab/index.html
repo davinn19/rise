@@ -20,21 +20,26 @@
             <rect class="sky" width="100%" height="100%" style="fill:aqua;stroke-width:0"></rect>
             <g id="stars" class="nightCelestial celestial"></g>
             <g id="moon" class="nightCelestial celestial" transform="rotate(20)">
-                <circle id="moonBackground" r="5" class="sky"></circle>
-                <circle id="moonGlow" r="5.2" style="fill:#9a7fcc17"></circle>
+                <circle id="moonBackground" r="3" class="sky"></circle>
+                <circle id="moonGlow" r="3.2" style="fill:#9a7fcc17"></circle>
                 <path id= "moonObject" style="fill:blanchedalmond"></path>
             </g>      
             <g id="sun" class="celestial">
-                <circle id="sunObject" r="5" style="fill:gold;stroke-width:0"></circle>
-            </g> 
-            <g class="mountain">
-                <polygon class="mountainLeft" points="20,90 140,90 80,30" style="fill:#6918b4"></polygon>
-                <polygon class="mountainRight" points="60,90 140,90 80,30" style="fill:#6b2390"></polygon>
+                <circle id="sunObject" r="3" style="fill:gold;stroke-width:0"></circle>
             </g>
-            <g class="mountain">
-                <polygon class="mountainLeft" points="-10,90 110,90 50,40" style="fill:#6918b4"></polygon>
-                <polygon class="mountainRight" points="30,90 110,90 50,40" style="fill:#6b2390"></polygon>
+            <g class="mountain" transform="translate(115, 80) scale(12)">
+                <polygon class="mountainLeft" points="0,0 4,0 2,-2" style="fill:#6918b4"></polygon>
+                <polygon class="mountainRight" points="1.333,0 4,0 2,-2" style="fill:#6b2390"></polygon>
             </g>
+            <g class="mountain" transform="translate(40, 80) scale(18)">
+                <polygon class="mountainLeft" points="0,0 4,0 2,-2" style="fill:#6918b4"></polygon>
+                <polygon class="mountainRight" points="1.333,0 4,0 2,-2" style="fill:#6b2390"></polygon>
+            </g>
+            <g class="mountain" transform="translate(60, 80) scale(20)">
+                <polygon class="mountainLeft" points="0,0 4,0 2,-2" style="fill:#6918b4"></polygon>
+                <polygon class="mountainRight" points="1.333,0 4,0 2,-2" style="fill:#6b2390"></polygon>
+            </g>
+            <polygon class="hill" points="0,90 160,90 160,80 0,70" style="fill:green"></polygon>
         </svg>
     </body>
 </html>

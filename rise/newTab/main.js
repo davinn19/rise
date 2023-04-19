@@ -22,7 +22,7 @@ let oldMinutes = -1;
  * Set to true to enable the slider overrides
  */
 const timeDebug = true;
-const moonPhaseDebug = true;
+const moonPhaseDebug = false;
 
 let debugMoonCyclePercentage = 0;
 
@@ -442,10 +442,10 @@ function updateBackground() {
     const moon = document.getElementById("moon");
 
     // Default values of sun and moon positions
-    const sunX = 110;
+    const sunX = 127.5;
     const moonX = 30;
-    const celestialPeak = 10;
-    const celestialHorizon = 60;
+    const celestialPeak = 5;
+    const celestialHorizon = 65;
 
     updateSkyColor();
     updateCelestialPositions();
@@ -539,12 +539,14 @@ function updateBackground() {
             moonObject.setAttribute("transform","rotate(0)");
         }
                 
-        const curveRadius = 5 / Math.cbrt(Math.cos(2 * Math.PI * moonCyclePercentage));
+        const moonRadius = parseInt(document.getElementById("moonBackground").getAttribute("r"));
+        console.log(moonRadius);
+        const curveRadius = moonRadius / Math.cbrt(Math.cos(2 * Math.PI * moonCyclePercentage));
 
         // swaps between crescent and gibbous
         const flipCurve = (moonCyclePercentage > 0.25 && moonCyclePercentage < 0.75) ? 0 : 1;
 
-        moonObject.setAttribute("d","M 0 5 A 5 5 0 0 0 0 -5 A " + curveRadius + " " + curveRadius + " 0 0 " + flipCurve + " 0 5")
+        moonObject.setAttribute("d","M 0 " + moonRadius + " A " + moonRadius + " " + moonRadius + " 0 0 0 0 -" + moonRadius + " A " + curveRadius + " " + curveRadius + " 0 0 " + flipCurve + " 0 " + moonRadius)
     }
 
     /**
