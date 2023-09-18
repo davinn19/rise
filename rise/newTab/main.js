@@ -445,7 +445,7 @@ function updateBackground() {
     const sunX = 110;
     const moonX = 30;
     const celestialPeak = 10;
-    const celestialHorizon = 60;
+    const celestialHorizon = 50;
 
     updateSkyColor();
     updateCelestialPositions();
@@ -496,6 +496,8 @@ function updateBackground() {
             const nightCelestial = nightCelestials[i];
             nightCelestial.style.opacity = opacity;
         }
+
+        sun.style.opacity = 1 - opacity;
     }
 
     /**
