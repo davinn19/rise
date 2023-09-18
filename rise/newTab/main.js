@@ -21,8 +21,8 @@ let oldMinutes = -1;
 /**
  * Set to true to enable the slider overrides
  */
-const timeDebug = true;
-const moonPhaseDebug = true;
+const timeDebug = false;
+const moonPhaseDebug = false;
 
 let debugMoonCyclePercentage = 0;
 
@@ -161,8 +161,8 @@ function updateTextColors() {
         return;
     }
 
-    for (const child of document.getElementById("foreground").children) {
-        child.style.color = newTextColor;
+    for (const text of document.getElementsByClassName("text")) {
+        text.style.color = newTextColor;
     }
 }
 
